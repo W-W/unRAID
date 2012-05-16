@@ -1,0 +1,451 @@
+<?xml version='1.0' standalone='yes'?>
+<PLUGIN>
+
+<!--
+2011-08-19 0.1-1bw 	- first release
+2011-08-20 0.2-1bw 	- added support for port change, some bug fixes
+2011-08-21 0.3-1bw 	- support for extra config dir, install to ramdisk, drop of sabnzbddependencies package
+2011-08-22 0.4-1bw 	- fixed a bug, when installed to ramdisk
+2011-08-23 0.4a-1bw - fixed a dependency bug
+2012-05-12 0.5-ww 	- added the newest dependiences and GIT version support
+2012-05-14 0.5a-ww  - added version informations
+
+This Plugin installs and controls Sickbeard for UnRaid.
+All dependencies are installed as needed and everything is controlable from the webgui
+-->
+
+<FILE Name="/boot/packages/python-2.6.6-i486-1.txz" Run="upgradepkg --install-new">
+<URL>http://slackware.cs.utah.edu/pub/slackware/slackware-13.37/slackware/d/python-2.6.6-i486-1.txz</URL>
+<MD5>b8de0c9f8b89aa7b3c89823d20076867</MD5>
+</FILE>
+
+<FILE Name="/boot/packages/python-cheetah-2.4.4-i486-1alien.tgz" Run="upgradepkg --install-new">
+<URL>http://connie.slackware.com/~alien/slackbuilds/python-cheetah/pkg/13.37/python-cheetah-2.4.4-i486-1alien.tgz</URL>
+<MD5>9535ac8193f269729467357b068117aa</MD5>
+</FILE>
+
+<FILE Name="/boot/packages/sqlite-3.7.5-i486-1.txz" Run="upgradepkg --install-new">
+<URL>http://slackware.cs.utah.edu/pub/slackware/slackware-13.37/slackware/ap/sqlite-3.7.5-i486-1.txz</URL>
+<MD5>6786d3764cb294ecb71cdd24e6d171d1</MD5>
+</FILE>
+
+<FILE Name="/boot/packages/curl-7.21.4-i486-1.txz" Run="upgradepkg --install-new">
+<URL>http://slackware.osuosl.org/slackware-13.37/slackware/n/curl-7.21.4-i486-1.txz</URL>
+<MD5>e32449e0588ef54df8524827028972e8</MD5>
+</FILE>
+
+<FILE Name="/boot/packages/git-1.7.4.4-i486-1.txz" Run="upgradepkg --install-new">
+<URL>http://slackware.osuosl.org/slackware-13.37/slackware/d/git-1.7.4.4-i486-1.txz</URL>
+<MD5>5d92bd44e67618dfdacc2e2fa9a41821</MD5>
+</FILE>
+
+<FILE Name="/boot/config/plugins/sickbeard/sickbeard.png">
+<URL>http://unraid.benjaminwaller.de/sickbeard/sickbeard.png</URL>
+</FILE>
+
+<!-- clean up previous install -->
+<FILE Name="/tmp/sickbeard-cleanup" Run="/bin/bash">
+<INLINE>
+<![CDATA[
+rm -f /etc/rc.d/rc.sickbeard
+rm -f -R /usr/local/emhttp/plugins/sickbeard
+
+rm /tmp/sickbeard-cleanup
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/boot/config/plugins/sickbeard/sickbeard.cfg">
+<INLINE>
+<![CDATA[
+# sickbeard configuration
+SERVICE="disable"
+INSTALLDIR="/mnt/cache/.apps/sickbeard"
+DATADIR="/mnt/cache/.apps/sickbeard"
+RUNAS="nobody"
+PORT="8083"
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/etc/rc.d/rc.sickbeard" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/sh
+# Start/stop/restart/enable/disable sickbeard.
+
+sickbeard_start() {
+  # no-op if not enabled
+  if [ $SERVICE != "enable" ]; then
+    return
+  fi
+  # no-op if already running
+  if [ -r /var/run/sickbeard/sickbeard.pid ]; then
+    return
+  fi
+  
+  # if directory doesn't exist or sickbeard is not found, install it
+  if [[ "$INSTALLDIR" != "" &&  ! -e "$INSTALLDIR/SickBeard.py" ]]; then
+    sickbeard_install
+  fi
+  
+  CMDLINE="sudo -u $RUNAS python $INSTALLDIR/SickBeard.py -d -p $PORT --datadir $DATADIR --pidfile /var/run/sickbeard/sickbeard.pid > /dev/null 2>&1"
+  echo -n "Starting sickbeard:  $CMDLINE"
+  $CMDLINE
+  echo
+  
+  while [ ! -e /var/run/sickbeard/sickbeard.pid ]; do
+	sleep 1
+  done
+  
+  echo -n "please refresh the page"
+}
+
+sickbeard_stop() {
+  # no-op if not running
+  if [ ! -r /var/run/sickbeard/sickbeard.pid ]; then
+    return
+  fi
+
+  echo -n "Stopping sickbeard..."
+  sleep 0.5
+  echo
+
+  kill $(cat /var/run/sickbeard/sickbeard.pid)
+  
+  while [ -e /var/run/sickbeard/sickbeard.pid ]; do
+	sleep 1
+  done
+  
+  echo
+}
+
+sickbeard_restart() {
+  sickbeard_stop
+  sleep 1
+  sickbeard_start
+}
+
+sickbeard_update() {
+  sickbeard_stop
+  sleep 1
+  sickbeard_install
+  sleep 1
+  sickbeard_start
+}
+
+write_config() {
+  echo "# sickbeard configuration" > /boot/config/plugins/sickbeard/sickbeard.cfg
+  echo "SERVICE=\"$SERVICE\"" >> /boot/config/plugins/sickbeard/sickbeard.cfg
+  echo "INSTALLDIR=\"$INSTALLDIR\"" >> /boot/config/plugins/sickbeard/sickbeard.cfg
+  echo "DATADIR=\"$DATADIR\"" >> /boot/config/plugins/sickbeard/sickbeard.cfg
+  echo "RUNAS=\"$RUNAS\"" >> /boot/config/plugins/sickbeard/sickbeard.cfg
+  echo "PORT=\"$PORT\"" >> /boot/config/plugins/sickbeard/sickbeard.cfg
+}
+
+sickbeard_enable() {
+  # if not already enabled, enable it
+  if [ "$SERVICE" != "enable" ]; then
+    SERVICE=enable
+  
+    INSTALLDIR="$3"
+	DATADIR="$4"
+	
+	if [ $DATADIR == "" ]; then
+	  $DATADIR="$INSTALLDIR"
+	fi
+	
+	if [ $RUNAS != $1 ]; then
+		chown -R $1:users "$INSTALLDIR"
+	fi
+	
+	RUNAS="$1"
+	PORT="$2"
+	
+	# create sickbeard user if necessary
+	if [[ $RUNAS != "nobody" && $RUNAS != "root" ]]; then
+		if ( ! grep -q ^$RUNAS /etc/passwd ); then
+	  		useradd -r -g users -d / -s /bin/false $RUNAS &> /dev/null
+	  		cp /etc/passwd /etc/shadow /boot/config
+		fi
+	fi
+	
+    #change port, so the config will have the correct port too (won't work at first run)
+	if [ -e "$DATADIR/config.ini" ]; then
+		mv "$DATADIR/config.ini" "$DATADIR/config.old"
+		sed 's/^web_port = [0-9]*/web_port = '$PORT'/' "$DATADIR/config.old" > "$DATADIR/config.ini"
+		chown $RUNAS:users "$DATADIR/config.ini"
+		rm "$DATADIR/config.old"
+	fi
+	
+    write_config
+  fi
+
+  # enabling also starts it
+  sickbeard_start
+}
+
+sickbeard_disable() {
+  sickbeard_stop
+  SERVICE=disable
+  write_config
+}
+
+sickbeard_install() {
+	echo "installing latest Version of sickbeard"
+	
+	if [ ! -e "$INSTALLDIR" ]; then 
+		mkdir -p $INSTALLDIR
+    fi
+	
+	cd /tmp
+	git clone https://github.com/midgetspy/Sick-Beard/
+	cp -Rf /tmp/Sick-Beard/* $INSTALLDIR
+	rm -Rf /tmp/Sick-Beard
+	chown -R $RUNAS:users "$INSTALLDIR" "$DATADIR"
+	
+# version	
+#	wget -q -O feed.atom --no-check-certificate "https://github.com/midgetspy/Sick-Beard/commits/master.atom"
+#	ID=$(cat feed.atom | sed -n 's|<id>tag:github.com,2008:Grit::Commit/\(.*\)</id>|\1|p' | sed '1q;d' | cut -d' ' -f5-)
+
+	#	wget -q -O sickbeard.tar.gz --no-check-certificate "http://github.com/midgetspy/Sick-Beard/tarball/master"
+#	tar -xf /tmp/sickbeard.tar.gz -C $(dirname $INSTALLDIR)
+#	mv $(dirname $INSTALLDIR)/midgetspy-Sick-Beard-* $INSTALLDIR
+#	cp -R $(dirname $INSTALLDIR)/midgetspy-Sick-Beard-*/* $INSTALLDIR
+#	rm -R $(dirname $INSTALLDIR)/midgetspy-Sick-Beard-*
+#	chown -R $RUNAS:users "$INSTALLDIR"
+#	rm /tmp/sickbeard.tar.gz
+}
+
+# read our configuration
+source /boot/config/plugins/sickbeard/sickbeard.cfg
+
+case "$1" in
+'start')
+  sickbeard_start
+  ;;
+'stop')
+  sickbeard_stop
+  ;;
+'restart')
+  sickbeard_restart
+  ;;
+'update')
+  sickbeard_update
+  ;;
+'enable')
+  sickbeard_enable $2 $3 $4 $5
+  ;;
+'disable')
+  sickbeard_disable
+  ;;
+'install')
+  sickbeard_install
+  ;;
+*)
+  echo "usage $0 start|stop|restart|enable|disable|update"
+esac
+
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/sickbeard/sickbeard.page">
+<INLINE>
+<![CDATA[
+Menu="NetworkServices"
+Icon="sickbeard.png"
+Version="0.5a"
+Author="Benjamin Waller; Wojciech Walaszek"
+Type="php"
+Title="SickBeard"
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/sickbeard/sickbeard.png">
+<LOCAL>/boot/config/plugins/sickbeard/sickbeard.png</LOCAL>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/sickbeard/sickbeard.php">
+<INLINE>
+<![CDATA[
+<?PHP
+$sickbeard_cfg = parse_ini_file( "/boot/config/plugins/sickbeard/sickbeard.cfg");
+$sickbeard_running = file_exists( "/var/run/sickbeard/sickbeard.pid") ? "yes" : "no";
+$sickbeard_datadir = $sickbeard_cfg["DATADIR"];
+if (file_exists($sickbeard_datadir."/version.txt"))
+{
+	$sickbeard_curversion = trim(shell_exec( "cat \"$sickbeard_datadir\"/version.txt" ));
+} else {
+	$sickbeard_curversion = "UNKNOWN. Please do Force Version Check in SickBeard to correct it"; 
+}
+	$sickbeard_newversion = trim(shell_exec( "cd /tmp/ && wget -q -O feed.atom --no-check-certificate https://github.com/midgetspy/Sick-Beard/commits/master.atom && cat feed.atom | sed -n 's|tag:github.com,2008:Grit::Commit/\(.*\)|\\1|p' | sed '1q;d' | cut -d' ' -f5- | sed 's/....\(.*\)...../\\1/' && rm feed.atom" ));
+//get sickbeard config
+if (file_exists($sickbeard_cfg["DATADIR"]."/config.ini"))
+{
+	$ff = file_GET_contents($sickbeard_cfg["DATADIR"]."/config.ini");
+	$data = explode("\n",$ff);
+	foreach ($data as $d) {
+		if ( substr($d,0,1) != "#") {
+			ereg("([^=]*)=([^$]*)", $d, $regs);
+			$sickconfig[trim($regs[1])] = trim(str_replace("\"", "", $regs[2]));
+		}
+	}
+	$sick_port = $sickconfig["web_port"];
+} else {
+	$sick_port = "8081";
+}
+
+?>
+   <form name="sickbeard_settings" method="POST" action="/update.htm" target="progressFrame">
+      <input type="hidden" name="cmd" value="/etc/rc.d/rc.sickbeard">
+      <table class="settings">
+         <tr>
+         <td>Enable sickbeard:</td>
+         <td><select name="arg1" size="1"  onChange="checkINSTALLDIR(this.form);">
+            <?=mk_option($sickbeard_cfg['SERVICE'], "disable", "No");?>
+            <?=mk_option($sickbeard_cfg['SERVICE'], "enable", "Yes");?>
+            </select></td>
+         </tr>
+         <tr>
+         <td>Install directory:</td>
+         <td><input type="text" name="arg4" maxlength="60" value="<?=$sickbeard_cfg['INSTALLDIR'];?>"></td>
+         </tr>
+		 <tr>
+         <td>Data directory:</td>
+         <td><input type="checkbox" name="use_data" <?=($sickbeard_cfg['DATADIR']!=$sickbeard_cfg['INSTALLDIR'])?"checked=\"checked\"":"";?>  onChange="checkDATADIR(this.form);"> <input type="text" name="arg5" maxlength="60" value="<?=$sickbeard_cfg['DATADIR'];?>"></td>
+         </tr>
+		 <tr>
+         <td>Port:</td>
+         <td><input type="text" name="arg3" maxlength="40" value="<?=$sickbeard_cfg['PORT'];?>"></td>
+         </tr>
+		 <tr>
+         <td>Run as user:</td>
+         <td><select name="runas" size="1"  onChange="checkUSER(this.form);">
+            <?=mk_option($sickbeard_cfg['RUNAS'], "nobody", "nobody");?>
+            <?=mk_option($sickbeard_cfg['RUNAS'], "root", "root");?>
+			<option value='other'<?=($sickbeard_cfg['RUNAS'] != "root" && $sickbeard_cfg['RUNAS'] != "nobody")?" selected=yes":"" ;?>>other</option>
+            </select><input type="text" name="arg2" maxlength="40" value="<?=$sickbeard_cfg['RUNAS'];?>"></td>
+         </tr>
+         <tr>
+         <td></td>
+         <td><input type="submit" name="runCmd" value="Apply"><button type="button" onClick="done();">Done</button></td>
+         </tr>
+      </table>
+   </form>
+<? if ($sickbeard_running=="yes"): ?>
+     <hr>
+     <p class=ContentTitle><a href="http://<?=$var['NAME'];?>:<?=$sickbeard_cfg['PORT'];?>" target="_blank">SickBeard</a> is running with version: <?=$sickbeard_curversion;?></p>
+<? endif; ?>
+<? if (strcmp($sickbeard_curversion, $sickbeard_newversion)!=0): ?>
+     <hr>
+	 <form name="sickbeard_settings" method="POST" action="/update.htm" target="progressFrame">
+	      <input type="hidden" name="cmd" value="/etc/rc.d/rc.sickbeard install">
+	      <p class=ContentTitle>Update available to version: <?=$sickbeard_newversion;?></p>
+		  <table style="align:center;">
+	         <tr>
+	         <td><input type="submit" name="runCmd" value="Install"><button type="button" onClick="done();">Done</button></td>
+	         </tr>
+	      </table>
+	 </form>	 
+<? endif; ?>
+
+<script type="text/javascript">
+function checkINSTALLDIR(form)
+{
+   if ("<?=$sickbeard_running;?>" == "yes") {
+	      form.arg2.readOnly = true;
+	      form.arg3.readOnly = true;
+		  form.arg4.readOnly = true;
+		  form.arg5.readOnly = true;
+		  form.runas.disabled = true;
+		  form.use_data.disabled = true;
+	   }
+	   else {
+	      form.arg2.readOnly = (form.arg1.value == "enable");
+	      form.arg3.readOnly = (form.arg1.value == "enable");
+	      form.arg4.readOnly = (form.arg1.value == "enable");
+	      form.arg5.readOnly = (form.arg1.value == "enable");
+	      form.runas.disabled = (form.arg1.value == "enable");
+	      form.use_data.disabled = (form.arg1.value == "enable");
+	   }
+}
+
+function checkUSER(form)
+{
+	if (form.runas.selectedIndex < 2 ) {
+		form.arg2.value = form.runas.options[form.runas.selectedIndex].value;
+		form.arg2.type = "hidden";
+	} else {
+		form.arg2.value = "<?=$sickbeard_cfg['RUNAS'];?>";
+		form.arg2.type = "text";
+	}
+}
+function checkDATADIR(form)
+{
+	if (form.use_data.checked == false ) {
+		form.arg5.value = form.arg4.value;;
+		form.arg5.type = "hidden";
+	} else {
+		form.arg5.value = "<?=$sickbeard_cfg['DATADIR'];?>";
+		form.arg5.type = "text";
+	}
+}
+
+checkINSTALLDIR(document.sickbeard_settings);
+checkUSER(document.sickbeard_settings);
+checkDATADIR(document.sickbeard_settings);
+</script>
+
+]]>
+</INLINE>
+</FILE>
+
+<!-- event handler -->
+<FILE Name="/usr/local/emhttp/plugins/sickbeard/event/disks_mounted" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/bash
+/etc/rc.d/rc.sickbeard start
+]]>
+</INLINE>
+</FILE>
+
+<!-- event handler -->
+<FILE Name="/usr/local/emhttp/plugins/sickbeard/event/unmounting_disks" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/bash
+/etc/rc.d/rc.sickbeard stop
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/tmp/sickbeard-install" Run="/bin/bash">
+<INLINE>
+<![CDATA[
+# include our config vars
+source /boot/config/plugins/sickbeard/sickbeard.cfg
+
+# create sickbeard-writable directory for pid file
+if [ ! -e /var/run/sickbeard ]; then
+  mkdir /var/run/sickbeard
+  chown $RUNAS:users /var/run/sickbeard
+  chmod 0777 /var/run/sickbeard
+fi
+
+rm /tmp/sickbeard-install
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/var/log/plugins/sickbeard">
+<INLINE>
+<![CDATA[
+
+]]>
+</INLINE>
+</FILE>
+
+</PLUGIN>
