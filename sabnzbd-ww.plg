@@ -15,6 +15,7 @@
 2012-05-14 0.6a-ww          - added version informations
 2012-05-04 0.7-influenced   - changed install and data directories to fix bug(if data directory exists at /mnt/cache/.Apps/ all information would be overwritten)
 2012-05-15 0.7.2-ww         - added storage/memory used by install & data dirs + some improvements
+2012-05-15 0.7.3-ww         - added some improvements
 
 This Plugin installs and controls SABnzbd+ for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -94,127 +95,116 @@ INSTALLBETA="no"
 
 sabnzbd_start()
 {
-  # no-op if not enabled
-  if [ $SERVICE != "enable" ]; then
-    return
-  fi
+	# no-op if not enabled
+	if [ $SERVICE != "enable" ]; then
+		return
+	fi
   
-  # no-op if already running
-  if [ -r /var/run/sabnzbd/sabnzbd-$PORT.pid ]; then
-    return
-  fi
+	# no-op if already running
+	if [ -r /var/run/sabnzbd/sabnzbd-$PORT.pid ]; then
+		return
+	fi
 
-  # if directory doesn't exist or sabnzbd is not found, install it
-  if [[ "$INSTALLDIR" != "" &&  ! -e "$INSTALLDIR/SABnzbd.py" ]]; then
-    sabnzbd_install
-  fi
+	# if directory doesn't exist or sabnzbd is not found, install it
+	if [[ "$INSTALLDIR" != "" &&  ! -e "$INSTALLDIR/SABnzbd.py" ]]; then
+		sabnzbd_install
+	fi
   
-  CMDLINE="sudo -u $RUNAS python $INSTALLDIR/SABnzbd.py -d -s 0.0.0.0:$PORT --config-file $DATADIR --pid /var/run/sabnzbd > /dev/null 2>&1"
-  echo -n "Starting sabnzbd:  $CMDLINE"
-  $CMDLINE
-  echo
+	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/SABnzbd.py -d -s 0.0.0.0:$PORT --config-file $DATADIR --pid /var/run/sabnzbd > /dev/null 2>&1"
+	echo -n "Starting sabnzbd:  $CMDLINE"
+	$CMDLINE
+	echo
   
-  while [ ! -e /var/run/sabnzbd/sabnzbd-$PORT.pid  ]; do
-	sleep 1
-  done
+	while [ ! -e /var/run/sabnzbd/sabnzbd-$PORT.pid  ]; do
+		sleep 1
+	done
 }
 
 sabnzbd_stop()
 {
-  # no-op if not running
-  if [ ! -r /var/run/sabnzbd/sabnzbd-$PORT.pid ]; then
-    return
-  fi
-  echo -n "Stopping sabnzbd..."
-  sleep 0.5
-  echo
+	# no-op if not running
+	if [ ! -r /var/run/sabnzbd/sabnzbd-$PORT.pid ]; then
+		return
+	fi
+	echo -n "Stopping sabnzbd..."
+	sleep 0.5
+	echo
 
-  if [ -d $DATADIR ] && [ -f $DATADIR/sabnzbd.ini ]
-	then
+	if [ -d $DATADIR ] && [ -f $DATADIR/sabnzbd.ini ]; then
 		APIKEY=`grep -w api_key $DATADIR/sabnzbd.ini | cut -d " " -f3`
 		IP=$(ifconfig  | grep 'inet addr:'| grep -v '127.0.0.1' | cut -d: -f2 | grep -v '^5' | awk '{ print $1}')
 		RES=$(wget -qO - "http://$IP:$PORT/sabnzbd/api?mode=shutdown&apikey=$APIKEY")
-				if [[ $RES != "ok" ]]
-				then
-					echo "wrong API KEY found, using kill"
-					kill $(cat /var/run/sabnzbd/sabnzbd-$PORT.pid)
-				fi
+		if [[ $RES != "ok" ]]; then
+			echo "wrong API KEY found, using kill"
+			kill $(cat /var/run/sabnzbd/sabnzbd-$PORT.pid)
+		fi
 	else
 		kill $(cat /var/run/sabnzbd/sabnzbd-$PORT.pid)
-  fi
-  echo
+	fi
+	echo
 
-  while [ -e /var/run/sabnzbd/sabnzbd-$PORT.pid  ]; do
-	sleep 1
-  done
+	while [ -e /var/run/sabnzbd/sabnzbd-$PORT.pid  ]; do
+		sleep 1
+	done
 }
 
 sabnzbd_restart()
 {
-  sabnzbd_stop
-  sleep 1
-  sabnzbd_start
-}
-
-sabnzbd_update()
-{
-  sabnzbd_stop
-  sleep 1
-  sabnzbd_install
-  sleep 1
-  sabnzbd_start
+	sabnzbd_stop
+	sleep 1
+	sabnzbd_start
 }
 
 write_config()
 {
-  echo "# sabnzbd configuration" > /boot/config/plugins/sabnzbd/sabnzbd.cfg
-  echo "SERVICE=\"$SERVICE\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
-  echo "INSTALLDIR=\"$INSTALLDIR\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
-  echo "DATADIR=\"$DATADIR\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
-  echo "PORT=\"$PORT\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
-  echo "RUNAS=\"$RUNAS\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
-  echo "INSTALLBETA=\"$INSTALLBETA\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
+	echo "# sabnzbd configuration" > /boot/config/plugins/sabnzbd/sabnzbd.cfg
+	echo "SERVICE=\"$SERVICE\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
+	echo "INSTALLDIR=\"$INSTALLDIR\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
+	echo "DATADIR=\"$DATADIR\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
+	echo "PORT=\"$PORT\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
+	echo "RUNAS=\"$RUNAS\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
+	echo "INSTALLBETA=\"$INSTALLBETA\"" >> /boot/config/plugins/sabnzbd/sabnzbd.cfg
 }
 
 sabnzbd_enable()
 {
-  # if not already enabled, enable it
-  if [ "$SERVICE" != "enable" ]; then
-    SERVICE=enable
-    PORT="$2"
-    INSTALLDIR="$3"
-	DATADIR="$4"
-	INSTALLBETA="$5"
+	# if not already enabled, enable it
+	if [ "$SERVICE" != "enable" ]; then
+		SERVICE=enable
+		PORT="$2"
+		INSTALLDIR="$3"
+		DATADIR="$4"
+		INSTALLBETA="$5"
 	
-	if [ $DATADIR == "" ]; then
-		$DATADIR=$INSTALLDIR
-	fi
-	
-	if [ $RUNAS != $1 ]; then
-		chown -R $1:users "$INSTALLDIR"
-	fi
-	
-	RUNAS="$1"
-	
-	# create sabnzbd user if necessary
-	if [[ $RUNAS != "nobody" && $RUNAS != "root" ]]; then
-		if ( ! grep -q ^$RUNAS /etc/passwd ); then
-	  		useradd -r -g users -d / -s /bin/false $RUNAS &> /dev/null
-	  		cp /etc/passwd /etc/shadow /boot/config
+		if [ $DATADIR == "" ]; then
+			$DATADIR=$INSTALLDIR
 		fi
+	
+		if [ $RUNAS != $1 ]; then
+			chown -R $1:users "$INSTALLDIR"
+		fi
+	
+		RUNAS="$1"
+	
+		# create sabnzbd user if necessary
+		if [[ $RUNAS != "nobody" && $RUNAS != "root" ]]; then
+			if ( ! grep -q ^$RUNAS /etc/passwd ); then
+				useradd -r -g users -d / -s /bin/false $RUNAS &> /dev/null
+				cp /etc/passwd /etc/shadow /boot/config
+			fi
+		fi
+		write_config
 	fi
-    write_config
-  fi
 
-  # enabling also starts it
-  sabnzbd_start
+	# enabling also starts it
+	sabnzbd_start
 }
 
 sabnzbd_disable()
 {
-  sabnzbd_stop
-  SERVICE=disable
-  write_config
+	sabnzbd_stop
+	SERVICE=disable
+	write_config
 }
 
 sabnzbd_install()
@@ -251,7 +241,7 @@ sabnzbd_install()
 	fi
 }
 
-sabnzbd_update()
+sabnzbd_check_update()
 {
 	if [[ $INSTALLBETA = "no" || $INSTALLBETA = "" ]]; then
 		sabnzbd_version
@@ -285,39 +275,40 @@ sabnzbd_version()
 source /boot/config/plugins/sabnzbd/sabnzbd.cfg
 
 case "$1" in
-'start')
-  sabnzbd_start
-  ;;
-'stop')
-  sabnzbd_stop
-  ;;
-'restart')
-  sabnzbd_restart
-  ;;
-'enable')
-  sabnzbd_enable $2 $3 $4 $5 $6
-  ;;
-'disable')
-  sabnzbd_disable
-  ;;
-'check_update')
-  sabnzbd_update
-  ;;
-'update')
-  sabnzbd_stop
-  sabnzbd_install
-  sabnzbd_start
-  ;;
-'install')
-  sabnzbd_install
-  ;;
-'version')
-  sabnzbd_version
-  echo $currentversion
-  ;;
-
-*)
-  echo "usage $0 start|stop|restart|enable|disable|update"
+	'start')
+		sabnzbd_start
+	;;
+	'stop')
+		sabnzbd_stop
+	;;
+	'restart')
+		sabnzbd_restart
+	;;
+	'enable')
+		sabnzbd_enable $2 $3 $4 $5 $6
+	;;
+	'disable')
+		sabnzbd_disable
+	;;
+	'check_update')
+		sabnzbd_check_update
+	;;
+	'update')
+		sabnzbd_stop
+		sleep 1
+		sabnzbd_install
+		sleep 1
+		sabnzbd_start
+	;;
+	'install')
+		sabnzbd_install
+	;;
+	'version')
+		sabnzbd_version
+		echo $currentversion
+	;;
+	*)
+		echo "usage $0 start|stop|restart|enable|disable|update"
 esac
 
 ]]>
@@ -329,7 +320,7 @@ esac
 <![CDATA[
 Menu="NetworkServices"
 Icon="sabnzbd.png"
-Version="0.7.2"
+Version="0.7.3"
 Author="Benjamin Waller; Influencer; Wojciech Walaszek"
 Type="php"
 Title="SABnzbd"
@@ -346,115 +337,136 @@ Title="SABnzbd"
 <![CDATA[
 <?PHP
 $sabnzbd_cfg = parse_ini_file( "/boot/config/plugins/sabnzbd/sabnzbd.cfg");
-$sabnzbd_running = file_exists( "/var/run/sabnzbd/sabnzbd-".$sabnzbd_cfg['PORT'].".pid") ? "yes" : "no";
-$sabnzbd_update  = shell_exec( "/etc/rc.d/rc.sabnzbd check_update" );
-$sabnzbd_curversion  = shell_exec( "/etc/rc.d/rc.sabnzbd version" );
-$sabnzbd_stableversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,\"\");print}' | sed -n 1p" );
-$sabnzbd_betaversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/eta/{gsub(/\015/,\"\");print}' | sed -n 1p" );
-$sabnzbd_installdirsize = trim(shell_exec( "if [ -e $sabnzbd_cfg[INSTALLDIR] ]; then du -sh $sabnzbd_cfg[INSTALLDIR] | cut -f1; else echo 0; fi"));
-$sabnzbd_datadirsize = trim(shell_exec( "if [ -e $sabnzbd_cfg[DATADIR] ]; then du -sh $sabnzbd_cfg[DATADIR] | cut -f1; else echo 0; fi" ));
+$sabnzbd_installed = file_exists( $sabnzbd_cfg["INSTALLDIR"] ) ? "yes" : "no";
+if ($sabnzbd_installed=="yes")
+{
+	$sabnzbd_running = file_exists( "/var/run/sabnzbd/sabnzbd-".$sabnzbd_cfg['PORT'].".pid") ? "yes" : "no";
+	$sabnzbd_update  = shell_exec( "/etc/rc.d/rc.sabnzbd check_update" );
+	$sabnzbd_curversion  = shell_exec( "/etc/rc.d/rc.sabnzbd version" );
+	$sabnzbd_stableversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,\"\");print}' | sed -n 1p" );
+	$sabnzbd_betaversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/eta/{gsub(/\015/,\"\");print}' | sed -n 1p" );
+	$sabnzbd_installdirsize = trim(shell_exec( "if [ -e $sabnzbd_cfg[INSTALLDIR] ]; then du -sh $sabnzbd_cfg[INSTALLDIR] | cut -f1; else echo 0; fi"));
+	$sabnzbd_datadirsize = trim(shell_exec( "if [ -e $sabnzbd_cfg[DATADIR] ]; then du -sh $sabnzbd_cfg[DATADIR] | cut -f1; else echo 0; fi" ));
+}
 ?>
-   <form name="sabnzbd_settings" method="POST" action="/update.htm" target="progressFrame">
-      <input type="hidden" name="cmd" value="/etc/rc.d/rc.sabnzbd">
-      <table class="settings">
-         <tr>
-         <td>Enable SABnzbd:</td>
-         <td><select name="arg1" size="1" onChange="checkINSTALLDIR(this.form);">
-            <?=mk_option($sabnzbd_cfg['SERVICE'], "disable", "No");?>
-            <?=mk_option($sabnzbd_cfg['SERVICE'], "enable", "Yes");?>
-            </select></td>
-         </tr>
-         <tr>
-			<td>Install Beta:</td>
-			<td><select name="arg6" size="1">
-				<?=mk_option($sabnzbd_cfg['INSTALLBETA'], "no", "No");?>
-				<?=mk_option($sabnzbd_cfg['INSTALLBETA'], "yes", "Yes");?>
-				</select></td>
-		 </tr>
-         <tr>
-         <td>Install directory:</td>
-         <td><input type="text" name="arg4" maxlength="60" value="<?=$sabnzbd_cfg['INSTALLDIR'];?>"></td>
-         </tr>
-		 <tr>
-         <td>Data directory:</td>
-         <td><input type="checkbox" name="use_data" <?=($sabnzbd_cfg['DATADIR']!=$sabnzbd_cfg['INSTALLDIR'])?"checked=\"checked\"":"";?>  onChange="checkDATADIR(this.form);"> <input type="text" name="arg5" maxlength="60" value="<?=$sabnzbd_cfg['DATADIR'];?>"></td>
-         </tr>
-		 <tr>
-         <td>Port:</td>
-         <td><input type="text" name="arg3" maxlength="40" value="<?=$sabnzbd_cfg['PORT'];?>"></td>
-         </tr>
-		 <tr>
-         <td>Run as user:</td>
-         <td><select name="runas" size="1"  onChange="checkUSER(this.form);">
-            <?=mk_option($sabnzbd_cfg['RUNAS'], "nobody", "nobody");?>
-            <?=mk_option($sabnzbd_cfg['RUNAS'], "root", "root");?>
-			<option value='other'<?=($sabnzbd_cfg['RUNAS'] != "root" && $sabnzbd_cfg['RUNAS'] != "nobody")?" selected=yes":"" ;?>>other</option>
-            </select><input type="text" name="arg2" maxlength="40" value="<?=$sabnzbd_cfg['RUNAS'];?>"></td>
-         </tr>
-         <tr>
-         <td></td>
-         <td><input type="submit" name="runCmd" value="Apply"><button type="button" onClick="done();">Done</button></td>
-         </tr>
-      </table>
-   </form>
-   <hr>
-<? if ($sabnzbd_running=="yes"): ?>
-	<p class=ContentTitle><a href="http://<?=$var['NAME'];?>:<?=$sabnzbd_cfg['PORT'];?>" target="_blank">SABnzbd</a> is running with version: <?=$sabnzbd_curversion?></p>
-<? else: ?>
-	<p class=ContentTitle>SABnzbd is not running!</p>
-<? endif; ?>
-<? if ($sabnzbd_installdirsize!=0 && $sabnzbd_installdirsize!=""): ?>
-	<? if ($sabnzbd_cfg["INSTALLDIR"] == $sabnzbd_cfg["DATADIR"]): ?>
-		<p class=ContentTitle>SABnzbd storage memory usage: install + data directory: <?=$sabnzbd_installdirsize?></p>
+	<form name="sabnzbd_settings" method="POST" action="/update.htm" target="progressFrame">
+		<input type="hidden" name="cmd" value="/etc/rc.d/rc.sabnzbd">
+		<table class="settings">
+			<tr>
+				<td>Enable SABnzbd:</td>
+				<td>
+					<select name="arg1" size="1" onChange="checkINSTALLDIR(this.form);">
+						<?=mk_option($sabnzbd_cfg['SERVICE'], "disable", "No");?>
+						<?=mk_option($sabnzbd_cfg['SERVICE'], "enable", "Yes");?>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>Install Beta:</td>
+				<td>
+					<select name="arg6" size="1">
+						<?=mk_option($sabnzbd_cfg['INSTALLBETA'], "no", "No");?>
+						<?=mk_option($sabnzbd_cfg['INSTALLBETA'], "yes", "Yes");?>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>Install directory:</td>
+				<td><input type="text" name="arg4" maxlength="60" value="<?=$sabnzbd_cfg['INSTALLDIR'];?>"></td>
+			</tr>
+			<tr>
+				<td>Data directory:</td>
+				<td><input type="checkbox" name="use_data" <?=($sabnzbd_cfg['DATADIR']!=$sabnzbd_cfg['INSTALLDIR'])?"checked=\"checked\"":"";?>  onChange="checkDATADIR(this.form);"> <input type="text" name="arg5" maxlength="60" value="<?=$sabnzbd_cfg['DATADIR'];?>"></td>
+			</tr>
+			<tr>
+				<td>Port:</td>
+				<td><input type="text" name="arg3" maxlength="40" value="<?=$sabnzbd_cfg['PORT'];?>"></td>
+			</tr>
+			<tr>
+				<td>Run as user:</td>
+				<td>
+					<select name="runas" size="1"  onChange="checkUSER(this.form);">
+						<?=mk_option($sabnzbd_cfg['RUNAS'], "nobody", "nobody");?>
+						<?=mk_option($sabnzbd_cfg['RUNAS'], "root", "root");?>
+						<option value='other'<?=($sabnzbd_cfg['RUNAS'] != "root" && $sabnzbd_cfg['RUNAS'] != "nobody")?" selected=yes":"" ;?>>other</option>
+					</select><input type="text" name="arg2" maxlength="40" value="<?=$sabnzbd_cfg['RUNAS'];?>">
+				</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td><input type="submit" name="runCmd" value="Apply"><button type="button" onClick="done();">Done</button></td>
+			</tr>
+		</table>
+	</form>
+	<hr>
+
+<? if ($sabnzbd_installed=="yes"): ?>
+	<? if ($sabnzbd_running=="yes"): ?>
+		<p class=ContentTitle><a href="http://<?=$var['NAME'];?>:<?=$sabnzbd_cfg['PORT'];?>" target="_blank">SABnzbd</a> is running with version: <?=$sabnzbd_curversion?></p>
 	<? else: ?>
-		<p class=ContentTitle>SABnzbd storage memory usage: install directory: <?=$sabnzbd_installdirsize?>, data directory: <?=$sabnzbd_installdirsize?></p>
+		<p class=ContentTitle>SABnzbd is not running!</p>
 	<? endif; ?>
-<? endif; ?>
-<? if ($sabnzbd_update != ""): ?>
-	 <form name="sabnzbd_settings" method="POST" action="/update.htm" target="progressFrame">
-	      <input type="hidden" name="cmd" value="/etc/rc.d/rc.sabnzbd update">
-		  <? if ($sabnzbd_cfg['INSTALLBETA'] == no): ?>
-	      <p class=ContentTitle>Update available to version: <?=$sabnzbd_stableversion?></p>
-		  <? endif; ?>
-		  <? if ($sabnzbd_cfg['INSTALLBETA'] == yes): ?>
-		  <p class=ContentTitle>Update available to version: <?=$sabnzbd_betaversion?></p>
-		  <? endif; ?>
-		  <table style="align:center;">
-	         <tr>
-	         <td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>
-	         </tr>
-	      </table>
-	   </form>
-<? endif; ?>
+	<? if ($sabnzbd_installdirsize!=0 && $sabnzbd_installdirsize!=""): ?>
+		<? if ($sabnzbd_cfg["INSTALLDIR"] == $sabnzbd_cfg["DATADIR"]): ?>
+			<p class=ContentTitle>SABnzbd storage memory usage: install + data directory: <?=$sabnzbd_installdirsize?></p>
+		<? else: ?>
+			<p class=ContentTitle>SABnzbd storage memory usage: install directory: <?=$sabnzbd_installdirsize?>, data directory: <?=$sabnzbd_installdirsize?></p>
+		<? endif; ?>
+	<? endif; ?>
+	<? if ($sabnzbd_update != ""): ?>
+		<form name="sabnzbd_settings" method="POST" action="/update.htm" target="progressFrame">
+			<input type="hidden" name="cmd" value="/etc/rc.d/rc.sabnzbd update">
+			<? if ($sabnzbd_cfg['INSTALLBETA'] == no): ?>
+				<p class=ContentTitle>Update available to version: <?=$sabnzbd_stableversion?></p>
+			<? endif; ?>
+			<? if ($sabnzbd_cfg['INSTALLBETA'] == yes): ?>
+				<p class=ContentTitle>Update available to version: <?=$sabnzbd_betaversion?></p>
+			<? endif; ?>
+			<table style="align:center;">
+				<tr>
+					<td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>
+				</tr>
+			</table>
+		</form>
+	<? endif; ?>
+<? else: ?>
+	<p class=ContentTitle>SABnzbd is not installed</p>
+<? endif; ?>	
+
 <script type="text/javascript">
 function checkINSTALLDIR(form)
 {
-   if ("<?=$sabnzbd_running;?>" == "yes") {
-      form.arg2.readOnly = true;
-      form.arg3.readOnly = true;
-      form.arg4.readOnly = true;
-      form.arg5.readOnly = true;
-	  form.arg6.readOnly = true;
-	  form.runas.disabled = true;
-	  form.use_data.disabled = true;
-   }
-   else {
-      form.arg2.readOnly = (form.arg1.value == "enable");
-      form.arg3.readOnly = (form.arg1.value == "enable");
-      form.arg4.readOnly = (form.arg1.value == "enable");
-	  form.arg5.readOnly = (form.arg1.value == "enable");
-	  form.arg6.readOnly = (form.arg1.value == "enable");
-      form.runas.disabled = (form.arg1.value == "enable");
-	  form.use_data.disabled = (form.arg1.value == "enable");
+	if ("<?=$sabnzbd_running;?>" == "yes")
+	{
+		form.arg2.readOnly = true;
+		form.arg3.readOnly = true;
+		form.arg4.readOnly = true;
+		form.arg5.readOnly = true;
+		form.arg6.readOnly = true;
+		form.runas.disabled = true;
+		form.use_data.disabled = true;
+	}
+   else
+   {
+		form.arg2.readOnly = (form.arg1.value == "enable");
+		form.arg3.readOnly = (form.arg1.value == "enable");
+		form.arg4.readOnly = (form.arg1.value == "enable");
+		form.arg5.readOnly = (form.arg1.value == "enable");
+		form.arg6.readOnly = (form.arg1.value == "enable");
+		form.runas.disabled = (form.arg1.value == "enable");
+		form.use_data.disabled = (form.arg1.value == "enable");
    }
 }
 
 function checkUSER(form)
 {
-	if (form.runas.selectedIndex < 2 ) {
+	if (form.runas.selectedIndex < 2 )
+	{
 		form.arg2.value = form.runas.options[form.runas.selectedIndex].value;
 		form.arg2.type = "hidden";
-	} else {
+	}
+	else
+	{
 		form.arg2.value = "<?=$sabnzbd_cfg['RUNAS'];?>";
 		form.arg2.type = "text";
 	}
@@ -462,10 +474,13 @@ function checkUSER(form)
 
 function checkDATADIR(form)
 {
-	if (form.use_data.checked == false ) {
-		form.arg5.value = form.arg4.value;;
+	if (form.use_data.checked == false )
+	{
+		form.arg5.value = form.arg4.value;
 		form.arg5.type = "hidden";
-	} else {
+	}
+	else
+	{
 		form.arg5.value = "<?=$sabnzbd_cfg['DATADIR'];?>";
 		form.arg5.type = "text";
 	}
