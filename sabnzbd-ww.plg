@@ -261,6 +261,15 @@ sabnzbd_check_update()
 	fi 
 }
 
+sabnzbd_update()
+{
+	sabnzbd_stop
+	sleep 1
+	sabnzbd_install
+	sleep 1
+	sabnzbd_start
+}	
+
 sabnzbd_version()
 {
 	if [ -f $INSTALLDIR/SABnzbd.py ]; then
@@ -294,11 +303,7 @@ case "$1" in
 		sabnzbd_check_update
 	;;
 	'update')
-		sabnzbd_stop
-		sleep 1
-		sabnzbd_install
-		sleep 1
-		sabnzbd_start
+		sabnzbd_update
 	;;
 	'install')
 		sabnzbd_install
@@ -388,7 +393,8 @@ if ($sabnzbd_installed=="yes")
 						<?=mk_option($sabnzbd_cfg['RUNAS'], "nobody", "nobody");?>
 						<?=mk_option($sabnzbd_cfg['RUNAS'], "root", "root");?>
 						<option value='other'<?=($sabnzbd_cfg['RUNAS'] != "root" && $sabnzbd_cfg['RUNAS'] != "nobody")?" selected=yes":"" ;?>>other</option>
-					</select><input type="text" name="arg2" maxlength="40" value="<?=$sabnzbd_cfg['RUNAS'];?>">
+					</select>
+					<input type="text" name="arg2" maxlength="40" value="<?=$sabnzbd_cfg['RUNAS'];?>">
 				</td>
 			</tr>
 			<tr>

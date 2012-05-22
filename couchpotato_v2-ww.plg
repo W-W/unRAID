@@ -345,7 +345,7 @@ if (file_exists($couchpotato_configfile))
 			<p class=ContentTitle>CouchPotato v2 storage memory usage: install directory: <?=$couchpotato_installdirsize?>, data directory: <?=$couchpotato_installdirsize?></p>
 		<? endif; ?>
 	<? endif; ?>
-	<? if (strcmp($couchpotato_curversion, $couchpotato_newversion)!=0 && $couchpotato_curversion!="couldn't determine the CouchPotato v2 version"): ?>
+	<? if (strcmp($couchpotato_curversion, $couchpotato_newversion)!=0 && $couchpotato_curversion!="couldn't determine the CouchPotato v2 version, please run CouchPotato V2 first"): ?>
 		<form name="coucpotato_settings" method="POST" action="/update.htm" target="progressFrame">
 			<input type="hidden" name="cmd" value="/etc/rc.d/rc.couchpotato_v2 update">
 			<p class=ContentTitle>Update available to version: <?=$couchpotato_newversion;?></p>
