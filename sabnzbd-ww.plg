@@ -310,7 +310,6 @@ case "$1" in
 	*)
 		echo "usage $0 start|stop|restart|enable|disable|update"
 esac
-
 ]]>
 </INLINE>
 </FILE>
@@ -337,7 +336,7 @@ Title="SABnzbd"
 <![CDATA[
 <?PHP
 $sabnzbd_cfg = parse_ini_file( "/boot/config/plugins/sabnzbd/sabnzbd.cfg");
-$sabnzbd_installed = file_exists( $sabnzbd_cfg["INSTALLDIR"] ) ? "yes" : "no";
+$sabnzbd_installed = file_exists( $sabnzbd_cfg["INSTALLDIR"] . "/SABnzbd.py" ) ? "yes" : "no";
 if ($sabnzbd_installed=="yes")
 {
 	$sabnzbd_running = file_exists( "/var/run/sabnzbd/sabnzbd-".$sabnzbd_cfg['PORT'].".pid") ? "yes" : "no";
@@ -490,7 +489,6 @@ checkINSTALLDIR(document.sabnzbd_settings);
 checkUSER(document.sabnzbd_settings);
 checkDATADIR(document.sabnzbd_settings);
 </script>
-
 ]]>
 </INLINE>
 </FILE>
