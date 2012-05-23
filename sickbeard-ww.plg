@@ -324,7 +324,7 @@ if (file_exists( "/boot/config/plugins/sickbeard/sickbeard.cfg" ))
 	<? endif; ?>
 	<? if ($sickbeard_installdirsize!=0 && $sickbeard_installdirsize!=""): ?>
 		<? if ($sickbeard_cfg["INSTALLDIR"] == $sickbeard_cfg["DATADIR"]): ?>
-			<p class=ContentTitle>SickBeard< storage memory usage: install + data directory: <?=$sickbeard_installdirsize?></p>
+			<p class=ContentTitle>SickBeard storage memory usage: install + data directory: <?=$sickbeard_installdirsize?></p>
 		<? else: ?>
 			<p class=ContentTitle>SickBeard storage memory usage: install directory: <?=$sickbeard_installdirsize?>, data directory: <?=$sickbeard_installdirsize?></p>
 		<? endif; ?>
