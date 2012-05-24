@@ -6,6 +6,7 @@
 2012-05-11 0.2-ww	- some improvements
 2012-05-14 0.2a-ww	- added version informations
 2012-05-17 0.3-ww	- added lots of improvments + storage/memory used by install & data dirs
+2012-05-17 0.4-influnced - Added message indicating whether data directory will survive a reboot or will be lost
 
 This Plugin installs and controls CouchPotato v2 for unRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -215,6 +216,24 @@ couchpotato_install()
 	chown -R $RUNAS:users "$INSTALLDIR"
 }
 
+couchpotato_datacheck() 
+{
+	array=( ramfs proc tempfs sysfs )
+	fs=$( stat -f -c '%T' $DATADIR )
+	for i in "${array[@]}"
+	do
+		if [ $i = $fs ]; then
+		    echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+			break
+		elif [ $i = msdos ]; then
+			echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			break
+		else
+			echo "<p style="font-size:16px\;">Your data will persist after a reboot</p>"
+			break
+		fi
+	done
+}
 # read our configuration
 source /boot/config/plugins/couchpotato_v2/couchpotato_v2.cfg
 
@@ -239,6 +258,9 @@ case "$1" in
 	;;
 	'install')
 		couchpotato_install
+	;;
+	'datacheck')
+		couchpotato_datacheck
 	;;
 	*)
 		echo "usage $0 start|stop|restart|enable|disable|update"
@@ -270,6 +292,7 @@ Title="CouchPotato v2"
 <?PHP
 $couchpotato_cfg = parse_ini_file( "/boot/config/plugins/couchpotato_v2/couchpotato_v2.cfg");
 $couchpotato_installed = file_exists( $couchpotato_cfg["INSTALLDIR"] . "/CouchPotato.py" ) ? "yes" : "no";
+$couchpotato_datacheck = shell_exec ( "/etc/rc.d/rc.couchpotato_v2 datacheck" );
 $couchpotato_configfile = $couchpotato_cfg["CONFIGFILE"];
 $couchpotato_datadir = trim(shell_exec( "cat \"$couchpotato_configfile\" | grep 'data_dir' | cut -d' ' -f3" ));
 if ($couchpotato_installed=="yes")
@@ -330,6 +353,7 @@ if (file_exists($couchpotato_configfile))
 		</table>
 	</form>
     <hr>
+	<?$couchpotato_datacheck?>
 <? if ($couchpotato_installed=="yes"): ?>
 	<? if ($couchpotato_running=="yes"): ?>
 		<p class=ContentTitle><a href="http://<?=$var['NAME'];?>:<?=$couch_port;?>" target="_blank">CouchPotato v2</a> is running with version: <?=$couchpotato_curversion;?></p>
