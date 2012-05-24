@@ -17,6 +17,7 @@
 2012-05-15 0.7.2-ww         - added storage/memory used by install & data dirs + some improvements
 2012-05-15 0.7.3-ww         - added some improvements
 2012-05-24 0.7.4-influenced - Added message indicating whether data directory will survive a reboot or will be lost
+2012-05-25 0.7.5-ww			- Added some formatting in web layout
 
 This Plugin installs and controls SABnzbd+ for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -287,13 +288,13 @@ sabnzbd_datacheck()
 	for i in "${array[@]}"
 	do
 		if [ $i = $fs ]; then
-		    echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+		    echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b>Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
 			break
 		elif [ $i = msdos ]; then
-			echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b>Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
 			break
 		else
-			echo "<p style="font-size:16px\;">Your data will persist after a reboot</p>"
+			echo "<p style="color:green\;margin-left:10px\;">Your data will persist after a reboot</p>"
 			break
 		fi
 	done
@@ -427,30 +428,29 @@ if ($sabnzbd_installed=="yes")
 		</table>
 	</form>
 	<hr>
-
-<?=$sabnzbd_datacheck?>
-		 
+<p style="font-size:16px;"><b>Additional informations:</b></p>
 <? if ($sabnzbd_installed=="yes"): ?>
 	<? if ($sabnzbd_running=="yes"): ?>
-		<p class=ContentTitle><a href="http://<?=$var['NAME'];?>:<?=$sabnzbd_cfg['PORT'];?>" target="_blank">SABnzbd</a> is running with version: <?=$sabnzbd_curversion?></p>
+		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$sabnzbd_cfg['PORT'];?>" target="_blank">SABnzbd</a> is running with version: <?=$sabnzbd_curversion?></p>
 	<? else: ?>
-		<p class=ContentTitle>SABnzbd is not running!</p>
+		<p style="margin-left:10px;">SABnzbd is not running!</p>
 	<? endif; ?>
 	<? if ($sabnzbd_installdirsize!=0 && $sabnzbd_installdirsize!=""): ?>
 		<? if ($sabnzbd_cfg["INSTALLDIR"] == $sabnzbd_cfg["DATADIR"]): ?>
-			<p class=ContentTitle>SABnzbd storage memory usage: install + data directory: <?=$sabnzbd_installdirsize?></p>
+			<p style="margin-left:10px;">SABnzbd storage memory usage: install + data directory: <?=$sabnzbd_installdirsize?></p>
 		<? else: ?>
-			<p class=ContentTitle>SABnzbd storage memory usage: install directory: <?=$sabnzbd_installdirsize?>, data directory: <?=$sabnzbd_datadirsize?></p>
+			<p style="margin-left:10px;">SABnzbd storage memory usage: install directory: <?=$sabnzbd_installdirsize?>, data directory: <?=$sabnzbd_datadirsize?></p>
 		<? endif; ?>
 	<? endif; ?>
+	<?=$sabnzbd_datacheck?>
 	<? if ($sabnzbd_update != ""): ?>
 		<form name="sabnzbd_settings" method="POST" action="/update.htm" target="progressFrame">
 			<input type="hidden" name="cmd" value="/etc/rc.d/rc.sabnzbd update">
 			<? if ($sabnzbd_cfg['INSTALLBETA'] == no): ?>
-				<p class=ContentTitle>Update available to version: <?=$sabnzbd_stableversion?></p>
+				<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <?=$sabnzbd_stableversion?></p>
 			<? endif; ?>
 			<? if ($sabnzbd_cfg['INSTALLBETA'] == yes): ?>
-				<p class=ContentTitle>Update available to version: <?=$sabnzbd_betaversion?></p>
+				<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <?=$sabnzbd_betaversion?></p>
 			<? endif; ?>
 			<table style="align:center;">
 				<tr>
@@ -460,8 +460,9 @@ if ($sabnzbd_installed=="yes")
 		</form>
 	<? endif; ?>
 <? else: ?>
-	<p class=ContentTitle>SABnzbd is not installed</p>
+	<p style="margin-left:10px;">SABnzbd is not installed</p>
 <? endif; ?>	
+<hr>
 
 <script type="text/javascript">
 function checkINSTALLDIR(form)
