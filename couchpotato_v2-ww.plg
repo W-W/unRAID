@@ -146,7 +146,7 @@ write_config()
     echo "CONFIGFILE=\"$CONFIGFILE\"" >> /boot/config/plugins/couchpotato_v2/couchpotato_v2.cfg
 	echo "RUNAS=\"$RUNAS\"" >> /boot/config/plugins/couchpotato_v2/couchpotato_v2.cfg
 	sed -i 's!data_dir = '"`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`"'!data_dir = '"$DATADIR"'!' "$CONFIGFILE"
-	sed -i 's!port = '"`cat "$CONFIGFILE" | grep 'port' | cut -d' ' -f3 | awk 'NR==2'`"'!port = '"$PORT"'!' "$CONFIGFILE"
+	sed -i 's!port = '"`cat "$CONFIGFILE" | grep 'port = ' | cut -d' ' -f3 | awk 'NR==2'`"'!port = '"$PORT"'!' "$CONFIGFILE"
 }
 
 couchpotato_enable()
@@ -184,13 +184,6 @@ couchpotato_change_settings()
 	  		useradd -r -g users -d / -s /bin/false $RUNAS &> /dev/null
 	  		cp /etc/passwd /etc/shadow /boot/config
 		fi
-	fi
-
-	
-	#change port & data dir
-	if [ -e "$CONFIGFILE" ]; then
-		sed -i 's!data_dir = '"`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`"'!data_dir = '"$DATADIR"'!' "$CONFIGFILE"
-		sed -i 's!port = '"`cat "$CONFIGFILE" | grep 'port' | cut -d' ' -f3 | awk 'NR==2'`"'!port = '"$PORT"'!' "$CONFIGFILE"
 	fi
 }
 
@@ -287,7 +280,7 @@ if ($couchpotato_installed=="yes")
 }
 //get couchpotato v2 config
 if (file_exists($couchpotato_configfile))
-	$couch_port = trim(shell_exec( "cat \"$couchpotato_configfile\" | grep 'port' | cut -d' ' -f3" ));
+	$couch_port = trim(shell_exec( "cat \"$couchpotato_configfile\" | grep 'port = ' | cut -d' ' -f3 | awk 'NR==2'" ));
 
 ?>
 	<form name="couchpotato_settings" method="POST" action="/update.htm" target="progressFrame">
