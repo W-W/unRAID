@@ -2,15 +2,16 @@
 <PLUGIN>
 
 <!--
-2011-08-19 0.1-1bw 	- first release
-2011-08-20 0.2-1bw 	- added support for port change, some bug fixes
-2011-08-21 0.3-1bw 	- support for extra config dir, install to ramdisk, drop of sabnzbddependencies package
-2011-08-22 0.4-1bw 	- fixed a bug, when installed to ramdisk
-2011-08-23 0.4a-1bw - fixed a dependency bug
-2012-05-12 0.5-ww 	- added the newest dependiences and GIT version support
-2012-05-14 0.5a-ww  - added version informations
-2012-05-22 0.6-ww   - added storage/memory used by install & data dirs + some improvements
-2012-05-24 0.7-influenced - added message indicating whether data directory would be saved during reboot or lost
+2011-08-19 0.1-1bw 		    - first release
+2011-08-20 0.2-1bw 		    - added support for port change, some bug fixes
+2011-08-21 0.3-1bw 		    - support for extra config dir, install to ramdisk, drop of sabnzbddependencies package
+2011-08-22 0.4-1bw 		    - fixed a bug, when installed to ramdisk
+2011-08-23 0.4a-1bw 	    - fixed a dependency bug
+2012-05-12 0.5-ww 		    - added the newest dependiences and GIT version support
+2012-05-14 0.5a-ww  	    - added version informations
+2012-05-22 0.6-ww   	    - added storage/memory used by install & data dirs + some improvements
+2012-05-24 0.7-influenced   - added message indicating whether data directory would be saved during reboot or lost
+2012-05-25 0.7.1-ww		    - added some formatting in web layout
 
 This Plugin installs and controls Sickbeard for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -204,19 +205,20 @@ sickbeard_install()
 	chown -R $RUNAS:users "$INSTALLDIR" "$DATADIR"
 }
 
-sickbeard_datacheck() {
+sickbeard_datacheck() 
+{
 	array=( ramfs proc tempfs sysfs )
 	fs=$( stat -f -c '%T' $DATADIR )
 	for i in "${array[@]}"
 	do
 		if [ $i = $fs ]; then
-		    echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+		    echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b>Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
 			break
 		elif [ $i = msdos ]; then
-			echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b>Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
 			break
 		else
-			echo "<p style="font-size:16px\;">Your data will persist after a reboot</p>"
+			echo "<p style="color:green\;margin-left:10px\;">Your data will persist after a reboot</p>"
 			break
 		fi
 	done
@@ -336,24 +338,25 @@ if ($sickbeard_installed=="yes")
 		</table>
 	</form>
 	<hr>
-	<?=$sickbeard_datacheck?>
+<p style="font-size:16px;"><b>Additional informations:</b></p>
 <? if ($sickbeard_installed=="yes"): ?>	
 	<? if ($sickbeard_running=="yes"): ?>
-		<p class=ContentTitle><a href="http://<?=$var['NAME'];?>:<?=$sickbeard_cfg['PORT'];?>" target="_blank">SickBeard</a> is running with version: <?=$sickbeard_curversion;?></p>
+		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$sickbeard_cfg['PORT'];?>" target="_blank">SickBeard</a> is running with version: <?=$sickbeard_curversion;?></p>
 	<? else: ?>
-		<p class=ContentTitle>SickBeard is not running!</p>
+		<p style="margin-left:10px;">SickBeard is not running!</p>
 	<? endif; ?>
 	<? if ($sickbeard_installdirsize!=0 && $sickbeard_installdirsize!=""): ?>
 		<? if ($sickbeard_cfg["INSTALLDIR"] == $sickbeard_cfg["DATADIR"]): ?>
-			<p class=ContentTitle>SickBeard storage memory usage: install + data directory: <?=$sickbeard_installdirsize?></p>
+			<p style="margin-left:10px;">SickBeard storage memory usage: install + data directory: <?=$sickbeard_installdirsize?></p>
 		<? else: ?>
-			<p class=ContentTitle>SickBeard storage memory usage: install directory: <?=$sickbeard_installdirsize?>, data directory: <?=$sickbeard_datadirsize?></p>
+			<p style="margin-left:10px;">SickBeard storage memory usage: install directory: <?=$sickbeard_installdirsize?>, data directory: <?=$sickbeard_datadirsize?></p>
 		<? endif; ?>
 	<? endif; ?>
+	<?=$sickbeard_datacheck?>
 	<? if (strcmp($couchpotato_curversion, $couchpotato_newversion)!=0 && $couchpotato_curversion!="couldn't determine the SickBeard version, please run Update Now at the top of the SickBeard web page first"): ?>
 		<form name="sickbeard_settings" method="POST" action="/update.htm" target="progressFrame">
 			<input type="hidden" name="cmd" value="/etc/rc.d/rc.sickbeard update">
-			<p class=ContentTitle>Update available to version: <?=$sickbeard_newversion;?></p>
+			<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <?=$sickbeard_newversion;?></p>
 			<table style="align:center;">
 				<tr>
 					<td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>
@@ -362,7 +365,7 @@ if ($sickbeard_installed=="yes")
 		</form>	 
 	<? endif; ?>
 <? else: ?>
-	<p class=ContentTitle>SickBeard is not installed</p>
+	<p style="margin-left:10px;">SickBeard is not installed</p>
 <? endif; ?>	
 
 <script type="text/javascript">
