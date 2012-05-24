@@ -203,6 +203,11 @@ couchpotato_install()
 		mkdir -p $INSTALLDIR
 	fi
 	
+	DATADIR = "`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`"
+	if [ ! -e "$DATADIR" ]; then 
+		mkdir -p $DATADIR
+	fi
+	
 	cd /tmp
 	git clone https://github.com/RuudBurger/CouchPotatoServer.git
 	cp -Rf /tmp/CouchPotatoServer/* $INSTALLDIR
@@ -335,7 +340,7 @@ if (file_exists($couchpotato_configfile))
 		<? if ($couchpotato_cfg["INSTALLDIR"] == $couchpotato_datadir): ?>
 			<p class=ContentTitle>CouchPotato v2 storage memory usage: install + data directory: <?=$couchpotato_installdirsize?></p>
 		<? else: ?>
-			<p class=ContentTitle>CouchPotato v2 storage memory usage: install directory: <?=$couchpotato_installdirsize?>, data directory: <?=$couchpotato_installdirsize?></p>
+			<p class=ContentTitle>CouchPotato v2 storage memory usage: install directory: <?=$couchpotato_installdirsize?>, data directory: <?=$couchpotato_datadirsize?></p>
 		<? endif; ?>
 	<? endif; ?>
 	<? if (strcmp($couchpotato_curversion, $couchpotato_newversion)!=0 && $couchpotato_curversion!="couldn't determine the CouchPotato v2 version, please run CouchPotato V2 first"): ?>

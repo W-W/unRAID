@@ -209,14 +209,17 @@ sabnzbd_disable()
 
 sabnzbd_install()
 {	
+	if [ ! -e "$INSTALLDIR" ]; then 
+		mkdir -p "$INSTALLDIR"
+	fi
+	if [ ! -e "$DATADIR" ]; then 
+		mkdir -p "$DATADIR"
+	fi
+	
 	echo $INSTALLBETA
 	if [[ $INSTALLBETA = "" || $INSTALLBETA = "no" ]]; then
 		stable=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,"");print}'))
 		echo "installing latest Version ($stable)"
-	
-		if [ ! -e "$INSTALLDIR" ]; then 
-			mkdir -p "$INSTALLDIR"
-		fi
 	
 		cd /tmp
 		wget -q http://downloads.sourceforge.net/project/sabnzbdplus/sabnzbdplus/sabnzbd-${stable}/SABnzbd-${stable}-src.tar.gz
@@ -227,10 +230,6 @@ sabnzbd_install()
 	elif [[ $INSTALLBETA = "yes" && $INSTALLBETA != "" ]]; then
 		beta=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/eta/{gsub(/\015/,"");print}'))
 		echo "installing latest Beta Version ($beta)";
-	
-		if [ ! -e "$INSTALLDIR" ]; then 
-			mkdir -p "$INSTALLDIR"
-		fi
 	
 		cd /tmp 
 		wget http://downloads.sourceforge.net/project/sabnzbdplus/sabnzbdplus-beta/${beta}/SABnzbd-${beta}-src.tar.gz
@@ -415,7 +414,7 @@ if ($sabnzbd_installed=="yes")
 		<? if ($sabnzbd_cfg["INSTALLDIR"] == $sabnzbd_cfg["DATADIR"]): ?>
 			<p class=ContentTitle>SABnzbd storage memory usage: install + data directory: <?=$sabnzbd_installdirsize?></p>
 		<? else: ?>
-			<p class=ContentTitle>SABnzbd storage memory usage: install directory: <?=$sabnzbd_installdirsize?>, data directory: <?=$sabnzbd_installdirsize?></p>
+			<p class=ContentTitle>SABnzbd storage memory usage: install directory: <?=$sabnzbd_installdirsize?>, data directory: <?=$sabnzbd_datadirsize?></p>
 		<? endif; ?>
 	<? endif; ?>
 	<? if ($sabnzbd_update != ""): ?>
@@ -527,11 +526,10 @@ source /boot/config/plugins/sabnzbd/sabnzbd.cfg
 
 # create sabnzbd-writable directory for pid file
 if [ ! -e /var/run/sabnzbd ]; then
-  mkdir /var/run/sabnzbd
-  chown $RUNAS:users /var/run/sabnzbd
-  chmod 0777 /var/run/sabnzbd
+	mkdir /var/run/sabnzbd
+	chown $RUNAS:users /var/run/sabnzbd
+	chmod 0777 /var/run/sabnzbd
 fi
-
 rm /tmp/sabnzbd-install
 ]]>
 </INLINE>

@@ -264,6 +264,10 @@ plex_install()
 	if [ ! -d $PLEX_INSTALLDIR ]; then
 		mkdir -p $PLEX_INSTALLDIR
 	fi
+	if [ ! -d $PLEX_LIBRARYDIR ]; then
+		mkdir -p $PLEX_LIBRARYDIR
+	fi
+	
 	rsync -a /tmp/$PLEX_TARDIR/ $PLEX_INSTALLDIR
 
 	rm -f -R /tmp/$PLEX_TARDIR
@@ -445,7 +449,7 @@ if ($plex_installed=="yes")
 	<? if ($plex_cfg["PLEX_INSTALLDIR"] == $plex_cfg["PLEX_LIBRARYDIR"]): ?>
 		<p class=ContentTitle>Plex Media Server storage memory usage: install + library directory: <?=$plex_installdirsize?></p>
 	<? else: ?>
-		<p class=ContentTitle>Plex Media Server storage memory usage: install directory: <?=$plex_installdirsize?>, library directory: <?=$plex_installdirsize?></p>
+		<p class=ContentTitle>Plex Media Server storage memory usage: install directory: <?=$plex_installdirsize?>, library directory: <?=$plex_datadirsize?></p>
 	<? endif; ?>
 	<? if (trim($plex_newversion) == "true"): ?>
 		<form name="plex_settings" method="POST" action="/update.htm" target="progressFrame">

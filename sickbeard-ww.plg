@@ -104,17 +104,16 @@ sickbeard_stop()
 	if [ ! -r /var/run/sickbeard/sickbeard.pid ]; then
 		return
 	fi
-
+	
 	echo -n "Stopping sickbeard..."
 	sleep 0.5
 	echo
-
 	kill $(cat /var/run/sickbeard/sickbeard.pid)
-  
+	echo
+	
 	while [ -e /var/run/sickbeard/sickbeard.pid ]; do
 		sleep 1
 	done
-  
 	echo
 }
 
@@ -193,6 +192,9 @@ sickbeard_install()
 	if [ ! -e "$INSTALLDIR" ]; then 
 		mkdir -p $INSTALLDIR
     fi
+	if [ ! -e "$DATADIR" ]; then 
+		mkdir -p $DATADIR
+    fi
 	
 	cd /tmp
 	git clone https://github.com/midgetspy/Sick-Beard/
@@ -267,10 +269,6 @@ if ($sickbeard_installed=="yes")
 	$sickbeard_installdirsize = trim(shell_exec( "if [ -e $sickbeard_cfg[INSTALLDIR] ]; then du -sh $sickbeard_cfg[INSTALLDIR] | cut -f1; else echo 0; fi"));
 	$sickbeard_datadirsize = trim(shell_exec( "if [ -e $sickbeard_cfg[DATADIR] ]; then du -sh $sickbeard_cfg[DATADIR] | cut -f1; else echo 0; fi" ));
 }
-	
-//get sickbeard config
-if (file_exists( "/boot/config/plugins/sickbeard/sickbeard.cfg" ))
-	$sick_port = trim(shell_exec( "cat /boot/config/plugins/sickbeard/sickbeard.cfg | grep PORT | cut -d'\"' -f2" ));
 
 ?>
 	<form name="sickbeard_settings" method="POST" action="/update.htm" target="progressFrame">
@@ -326,7 +324,7 @@ if (file_exists( "/boot/config/plugins/sickbeard/sickbeard.cfg" ))
 		<? if ($sickbeard_cfg["INSTALLDIR"] == $sickbeard_cfg["DATADIR"]): ?>
 			<p class=ContentTitle>SickBeard storage memory usage: install + data directory: <?=$sickbeard_installdirsize?></p>
 		<? else: ?>
-			<p class=ContentTitle>SickBeard storage memory usage: install directory: <?=$sickbeard_installdirsize?>, data directory: <?=$sickbeard_installdirsize?></p>
+			<p class=ContentTitle>SickBeard storage memory usage: install directory: <?=$sickbeard_installdirsize?>, data directory: <?=$sickbeard_datadirsize?></p>
 		<? endif; ?>
 	<? endif; ?>
 	<? if (strcmp($couchpotato_curversion, $couchpotato_newversion)!=0 && $couchpotato_curversion!="couldn't determine the SickBeard version, please run Update Now at the top of the SickBeard web page first"): ?>
