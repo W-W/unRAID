@@ -4,7 +4,7 @@
 <!--
 2012-04-14 - headphones-0.1-influenced - First release, packages for auto-update are commented out as may be larger than wanted
 2012-05-24 - 0.2-ww		       - added newest dependencies + install and data dir sizes + some improvements
-
+2012-05-24 - 0.3-influenced		- added message indicated if data directory will survuve a reboot or not
 This Plugin installs and controls headphones for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
 -->
@@ -202,7 +202,24 @@ headphones_install()
 	rm -Rf /tmp/headphones
 	chown -R $RUNAS:users "$INSTALLDIR" "$DATADIR"
 }
-
+headphones_datacheck() 
+{
+	array=( ramfs proc tempfs sysfs )
+	fs=$( stat -f -c '%T' $DATADIR )
+	for i in "${array[@]}"
+	do
+		if [ $i = $fs ]; then
+		    echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+			break
+		elif [ $i = msdos ]; then
+			echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			break
+		else
+			echo "<p style="font-size:16px\;">Your data will persist after a reboot</p>"
+			break
+		fi
+	done
+}
 # read our configuration
 source /boot/config/plugins/headphones/headphones.cfg
 
@@ -224,6 +241,9 @@ case "$1" in
 	;;
 	'install')
 		headphones_install
+	;;
+	'datacheck')
+		headphones_datacheck
 	;;
 	*)
 		echo "usage $0 start|stop|restart|enable|disable"
@@ -254,6 +274,7 @@ Title="Headphones"
 <![CDATA[
 <?PHP
 $headphones_cfg = parse_ini_file( "/boot/config/plugins/headphones/headphones.cfg");
+$headphones_datacheck = shell_exec ( "/etc/rc.d/rc.headphones datacheck" );
 $headphones_installed = file_exists( $headphones_cfg["INSTALLDIR"] . "/Headphones.py" ) ? "yes" : "no";
 if ($headphones_installed=="yes")
 {
@@ -309,7 +330,7 @@ if ($headphones_installed=="yes")
 		</table>
 	</form>
 	<hr>
-
+<?$headphones_datacheck?>
 <? if ($headphones_installed=="yes"): ?>	
 	<? if ($headphones_running=="yes"): ?>
 		<p class=ContentTitle><a href="http://<?=$var['NAME'];?>:<?=$headphones_cfg['PORT'];?>" target="_blank">Headphones</a> is running with version: <?=$headphones_curversion;?></p>

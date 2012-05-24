@@ -10,6 +10,7 @@
 2012-05-12 0.5-ww 	- added the newest dependiences and GIT version support
 2012-05-14 0.5a-ww  - added version informations
 2012-05-22 0.6-ww   - added storage/memory used by install & data dirs + some improvements
+2012-05-24 0.7-influenced - added message indicating whether data directory would be saved during reboot or lost
 
 This Plugin installs and controls Sickbeard for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -203,6 +204,24 @@ sickbeard_install()
 	chown -R $RUNAS:users "$INSTALLDIR" "$DATADIR"
 }
 
+sickbeard_datacheck() {
+	array=( ramfs proc tempfs sysfs )
+	fs=$( stat -f -c '%T' $DATADIR )
+	for i in "${array[@]}"
+	do
+		if [ $i = $fs ]; then
+		    echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+			break
+		elif [ $i = msdos ]; then
+			echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			break
+		else
+			echo "<p style="font-size:16px\;">Your data will persist after a reboot</p>"
+			break
+		fi
+	done
+}
+
 # read our configuration
 source /boot/config/plugins/sickbeard/sickbeard.cfg
 
@@ -227,6 +246,9 @@ case "$1" in
 	;;
 	'install')
 		sickbeard_install
+	;;
+	'datacheck')
+		sickbeard_datacheck
 	;;
 	*)
 		echo "usage $0 start|stop|restart|enable|disable|update"
@@ -257,6 +279,7 @@ Title="SickBeard"
 <![CDATA[
 <?PHP
 $sickbeard_cfg = parse_ini_file( "/boot/config/plugins/sickbeard/sickbeard.cfg" );
+$sickbeard_datacheck = shell_exec ( "/etc/rc.d/rc.sickbeard datacheck" );
 $sickbeard_installed = file_exists( $sickbeard_cfg["INSTALLDIR"] . "/SickBeard.py" ) ? "yes" : "no";
 if ($sickbeard_installed=="yes")
 {
@@ -313,7 +336,7 @@ if ($sickbeard_installed=="yes")
 		</table>
 	</form>
 	<hr>
-	
+	<?=$sickbeard_datacheck?>
 <? if ($sickbeard_installed=="yes"): ?>	
 	<? if ($sickbeard_running=="yes"): ?>
 		<p class=ContentTitle><a href="http://<?=$var['NAME'];?>:<?=$sickbeard_cfg['PORT'];?>" target="_blank">SickBeard</a> is running with version: <?=$sickbeard_curversion;?></p>
