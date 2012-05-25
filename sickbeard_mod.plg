@@ -11,7 +11,7 @@
 2012-05-14 0.5a-ww  	    - added version informations
 2012-05-22 0.6-ww   	    - added storage/memory used by install & data dirs + some improvements
 2012-05-24 0.7-influenced   - added message indicating whether data directory would be saved during reboot or lost
-2012-05-25 0.7.1-ww		    - added some formatting in web layout
+2012-05-25-ww		    	- added some formatting in web layout
 
 This Plugin installs and controls Sickbeard for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -343,7 +343,7 @@ if ($sickbeard_installed=="yes")
 	<? if ($sickbeard_running=="yes"): ?>
 		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$sickbeard_cfg['PORT'];?>" target="_blank">SickBeard</a> is running with version: <b><?=$sickbeard_curversion;?></b></p>
 	<? else: ?>
-		<p style="margin-left:10px;">SickBeard is not running!</p>
+		<p style="margin-left:10px;"><b>SickBeard is not running</b></p>
 	<? endif; ?>
 	<? if ($sickbeard_installdirsize!=0 && $sickbeard_installdirsize!=""): ?>
 		<? if ($sickbeard_cfg["INSTALLDIR"] == $sickbeard_cfg["DATADIR"]): ?>
@@ -365,7 +365,7 @@ if ($sickbeard_installed=="yes")
 		</form>	 
 	<? endif; ?>
 <? else: ?>
-	<p style="margin-left:10px;">SickBeard is not installed</p>
+	<p style="margin-left:10px;"><b>SickBeard is not installed</b></p>
 <? endif; ?>	
 
 <script type="text/javascript">

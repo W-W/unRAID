@@ -17,7 +17,7 @@
 2012-05-15 0.7.2-ww         - added storage/memory used by install & data dirs + some improvements
 2012-05-15 0.7.3-ww         - added some improvements
 2012-05-24 0.7.4-influenced - Added message indicating whether data directory will survive a reboot or will be lost
-2012-05-25 0.7.5-ww			- Added some formatting in web layout
+2012-05-25-ww				- added some formatting in web layout
 
 This Plugin installs and controls SABnzbd+ for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -433,7 +433,7 @@ if ($sabnzbd_installed=="yes")
 	<? if ($sabnzbd_running=="yes"): ?>
 		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$sabnzbd_cfg['PORT'];?>" target="_blank">SABnzbd</a> is running with version: <b><?=$sabnzbd_curversion?></b></p>
 	<? else: ?>
-		<p style="margin-left:10px;">SABnzbd is not running!</p>
+		<p style="margin-left:10px;"><b>SABnzbd is not running</b></p>
 	<? endif; ?>
 	<? if ($sabnzbd_installdirsize!=0 && $sabnzbd_installdirsize!=""): ?>
 		<? if ($sabnzbd_cfg["INSTALLDIR"] == $sabnzbd_cfg["DATADIR"]): ?>
@@ -460,7 +460,7 @@ if ($sabnzbd_installed=="yes")
 		</form>
 	<? endif; ?>
 <? else: ?>
-	<p style="margin-left:10px;">SABnzbd is not installed</p>
+	<p style="margin-left:10px;"><b>SABnzbd is not installed</b></p>
 <? endif; ?>	
 <hr>
 

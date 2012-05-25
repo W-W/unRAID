@@ -22,6 +22,7 @@
 2012-05-14 0.2b-ww          - added version informations
 2012-05-18 0.3-ww         	- added storage/memory used by install & data dirs + some improvements
 2012-05-22 0.4-ww         	- added install directory support
+2012-05-25-ww         		- added some modifications in web layout + data persistency info
 
 This Plugin installs and controls Plex Media Server for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -330,6 +331,25 @@ plex_version()
 	$PLEX_INSTALLDIR/Plex\ Media\ Server --version
 }
 
+plex_datacheck() 
+{
+	array=( ramfs proc tempfs sysfs )
+	fs=$( stat -f -c '%T' $PLEX_LIBRARYDIR )
+	for i in "${array[@]}"
+	do
+		if [ $i = $fs ]; then
+		    echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b>Your Library Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+			break
+		elif [ $i = msdos ]; then
+			echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b>Your Library Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			break
+		else
+			echo "<p style="color:green\;margin-left:10px\;">Your data will persist after a reboot</p>"
+			break
+		fi
+	done
+}
+
 # read the configuration files
 source /boot/config/plugins/plex/plex_settings.cfg
 source /boot/config/plugins/plex/plex_version.cfg
@@ -364,6 +384,9 @@ case "$1" in
 	'disable')
   		plex_disable $2 $3 $4 $5
   	;;
+	'datacheck')
+		plex_datacheck
+	;;
 	*)
   		echo "usage $0 start|stop|restart|update|version|newversion"
 esac
@@ -393,6 +416,7 @@ Title="Plex Media Server"
 <![CDATA[
 <?PHP
 $plex_cfg = parse_ini_file( "/boot/config/plugins/plex/plex_settings.cfg");
+$plex_datacheck = shell_exec ( "/etc/rc.d/rc.plex datacheck" );
 $plex_installed = file_exists( $plex_cfg["PLEX_INSTALLDIR"] . "/Plex Media Server" ) ? "yes" : "no";
 if ($plex_installed=="yes")
 {
@@ -439,22 +463,23 @@ if ($plex_installed=="yes")
 		</table>
 	</form>
 	<hr>
-
+<p style="font-size:16px;"><b>Additional informations:</b></p>
 <? if ($plex_installed=="yes"): ?>
 	<? if ($plex_running=="yes"): ?>
-		<p class=ContentTitle><a href="http://<?=$var['NAME'];?>:32400/manage" target="_blank">Plex Media Server</a> is running with version: <?=$plex_version;?></p>
+		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:32400/manage" target="_blank">Plex Media Server</a> is running with version: <b><?=$plex_version;?></b></p>
 	<? else: ?>
-		<p class=ContentTitle>Plex Media Server is not running!</p>
+		<p style="margin-left:10px;"><b>Plex Media Server is not running</b></p>
 	<? endif; ?>
 	<? if ($plex_cfg["PLEX_INSTALLDIR"] == $plex_cfg["PLEX_LIBRARYDIR"]): ?>
-		<p class=ContentTitle>Plex Media Server storage memory usage: install + library directory: <?=$plex_installdirsize?></p>
+		<p style="margin-left:10px;">Plex Media Server storage memory usage: install + library directory: <b><?=$plex_installdirsize?></b></p>
 	<? else: ?>
-		<p class=ContentTitle>Plex Media Server storage memory usage: install directory: <?=$plex_installdirsize?>, library directory: <?=$plex_datadirsize?></p>
+		<p style="margin-left:10px;">Plex Media Server storage memory usage: install directory: <b><?=$plex_installdirsize?><b/>, library directory: <b><?=$plex_datadirsize?></b></p>
 	<? endif; ?>
+	<?=$plex_datacheck?>
 	<? if (trim($plex_newversion) == "true"): ?>
 		<form name="plex_settings" method="POST" action="/update.htm" target="progressFrame">
 			<input type="hidden" name="cmd" value="/etc/rc.d/rc.plex update">
-			<p class=ContentTitle>Update available to version: <?=$plex_newestversion;?></p>
+			<p style="margin-left:10px;">Update available to version: <b><?=$plex_newestversion;?></b></p>
 			<table style="align:center;">
 				<tr>
 					<td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>
@@ -463,7 +488,7 @@ if ($plex_installed=="yes")
 		</form>
 	<? endif; ?>
 <? else: ?>
-	<p class=ContentTitle>Plex Media Server is not installed</p>
+	<p style="margin-left:10px;"><b>Plex Media Server is not installed</b></p>
 <? endif; ?>
 
 <script type="text/javascript">
