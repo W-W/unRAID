@@ -479,7 +479,7 @@ if ($plex_installed=="yes")
 	<? if (trim($plex_newversion) == "true"): ?>
 		<form name="plex_settings" method="POST" action="/update.htm" target="progressFrame">
 			<input type="hidden" name="cmd" value="/etc/rc.d/rc.plex update">
-			<p style="margin-left:10px;">Update available to version: <b><?=$plex_newestversion;?></b></p>
+			<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <b><?=$plex_newestversion;?></b></p>
 			<table style="align:center;">
 				<tr>
 					<td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>

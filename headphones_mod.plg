@@ -3,8 +3,10 @@
 
 <!--
 2012-04-14 - headphones-0.1-influenced - First release, packages for auto-update are commented out as may be larger than wanted
-2012-05-24 - 0.2-ww		       - added newest dependencies + install and data dir sizes + some improvements
-2012-05-24 - 0.3-influenced		- added message indicated if data directory will survuve a reboot or not
+2012-05-24 - 0.2-ww		       		   - added newest dependencies + install and data dir sizes + some improvements
+2012-05-24 - 0.3-influenced			   - added message indicated if data directory will survuve a reboot or not
+2012-05-25-ww						   - added some layou modifications  
+
 This Plugin installs and controls headphones for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
 -->
@@ -209,13 +211,13 @@ headphones_datacheck()
 	for i in "${array[@]}"
 	do
 		if [ $i = $fs ]; then
-		    echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+		    echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
 			break
 		elif [ $i = msdos ]; then
-			echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
 			break
 		else
-			echo "<p style="font-size:16px\;">Your data will persist after a reboot</p>"
+			echo "<p style="color:green\;margin-left:10px\;">Your data will persist after a reboot</p>"
 			break
 		fi
 	done
@@ -330,24 +332,25 @@ if ($headphones_installed=="yes")
 		</table>
 	</form>
 	<hr>
-<?$headphones_datacheck?>
+<p style="font-size:16px;"><b>Additional informations:</b></p>
 <? if ($headphones_installed=="yes"): ?>	
 	<? if ($headphones_running=="yes"): ?>
-		<p class=ContentTitle><a href="http://<?=$var['NAME'];?>:<?=$headphones_cfg['PORT'];?>" target="_blank">Headphones</a> is running with version: <?=$headphones_curversion;?></p>
+		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$headphones_cfg['PORT'];?>" target="_blank">Headphones</a> is running with version: <b><?=$headphones_curversion;?></b></p>
 	<? else: ?>
-		<p class=ContentTitle>Headphones is not running!</p>
+		<p style="margin-left:10px;"><b>Headphones is not running</b></p>
 	<? endif; ?>
 	<? if ($headphones_installdirsize!=0 && $headphones_installdirsize!=""): ?>
 		<? if ($headphones_cfg["INSTALLDIR"] == $headphones_cfg["DATADIR"]): ?>
-			<p class=ContentTitle>Headphones storage memory usage: install + data directory: <?=$headphones_installdirsize?></p>
+			<p style="margin-left:10px;">Headphones storage memory usage: install + data directory: <b><?=$headphones_installdirsize?></b></p>
 		<? else: ?>
-			<p class=ContentTitle>Headphones storage memory usage: install directory: <?=$headphones_installdirsize?>, data directory: <?=$headphones_datadirsize?></p>
+			<p style="margin-left:10px;">Headphones storage memory usage: install directory: <b><?=$headphones_installdirsize?></b>, data directory: <b><?=$headphones_datadirsize?></b></p>
 		<? endif; ?>
 	<? endif; ?>
+	<?=$headphones_datacheck?>
 	<? if (strcmp($headphones_curversion, $headphones_newversion)!=0 && $headphones_curversion!="couldn't determine the Headphones version, please run Update at the bottom of the Headphones web page first"): ?>
 		<form name="headphones_settings" method="POST" action="/update.htm" target="progressFrame">
 			<input type="hidden" name="cmd" value="/etc/rc.d/rc.headphones update">
-			<p class=ContentTitle>Update available to version: <?=$headphones_newversion;?></p>
+			<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <b><?=$headphones_newversion;?></b></p>
 			<table style="align:center;">
 				<tr>
 					<td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>
@@ -356,7 +359,7 @@ if ($headphones_installed=="yes")
 		</form>	 
 	<? endif; ?>
 <? else: ?>
-	<p class=ContentTitle>Headphones is not installed</p>
+	<p style="margin-left:10px;"><b>Headphones is not installed</b></p>
 <? endif; ?>	
 
 <script type="text/javascript">
