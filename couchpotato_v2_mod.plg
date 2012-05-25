@@ -2,11 +2,12 @@
 <PLUGIN>
 
 <!--
-2012-05-10 0.1-ww 	- first release based on couchpotato-0.5-i468-bw.plg - thanks to Benjamin Waller
-2012-05-11 0.2-ww	- some improvements
-2012-05-14 0.2a-ww	- added version informations
-2012-05-17 0.3-ww	- added lots of improvments + storage/memory used by install & data dirs
+2012-05-10 0.1-ww 	     - first release based on couchpotato-0.5-i468-bw.plg - thanks to Benjamin Waller
+2012-05-11 0.2-ww	     - some improvements
+2012-05-14 0.2a-ww	     - added version informations
+2012-05-17 0.3-ww	     - added lots of improvments + storage/memory used by install & data dirs
 2012-05-17 0.4-influnced - Added message indicating whether data directory will survive a reboot or will be lost
+2012-05-25-ww			 - put some fixes + layout modifications
 
 This Plugin installs and controls CouchPotato v2 for unRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -28,8 +29,8 @@ All dependencies are installed as needed and everything is controlable from the 
 <URL>http://slackware.osuosl.org/slackware-13.37/slackware/d/git-1.7.4.4-i486-1.txz</URL>
 <MD5>5d92bd44e67618dfdacc2e2fa9a41821</MD5>
 </FILE>
-<FILE Name="/boot/config/plugins/couchpotato_v2/couchpotato_v2.png">
-<URL>http://unraid.benjaminwaller.de/couchpotato/couchpotato.png</URL>
+<FILE Name="/boot/config/plugins/couchpotato_v2/couchpotato_logo.png">
+<URL>http://dl.dropbox.com/u/49442039/couchpotato_logo.png</URL>
 </FILE>
 
 <!-- clean up previous install -->
@@ -204,7 +205,7 @@ couchpotato_install()
 		mkdir -p $INSTALLDIR
 	fi
 	
-	DATADIR = "`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`"
+	DATADIR="`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`"
 	if [ ! -e "$DATADIR" ]; then 
 		mkdir -p $DATADIR
 	fi
@@ -218,18 +219,19 @@ couchpotato_install()
 
 couchpotato_datacheck() 
 {
+	DATADIR="`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`"
 	array=( ramfs proc tempfs sysfs )
 	fs=$( stat -f -c '%T' $DATADIR )
 	for i in "${array[@]}"
 	do
 		if [ $i = $fs ]; then
-		    echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+		    echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
 			break
 		elif [ $i = msdos ]; then
-			echo "<p style="color:red\;font-size:16px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
 			break
 		else
-			echo "<p style="font-size:16px\;">Your data will persist after a reboot</p>"
+			echo "<p style="color:green\;margin-left:10px\;">Your data will persist after a reboot</p>"
 			break
 		fi
 	done
@@ -273,8 +275,8 @@ esac
 <INLINE>
 <![CDATA[
 Menu="NetworkServices"
-Icon="couchpotato_v2.png"
-Version="0.3"
+Icon="couchpotato_logo.png"
+Version="0.5"
 Author="Wojciech Walaszek"
 Type="php"
 Title="CouchPotato v2"
@@ -282,8 +284,8 @@ Title="CouchPotato v2"
 </INLINE>
 </FILE>
 
-<FILE Name="/usr/local/emhttp/plugins/couchpotato_v2/couchpotato_v2.png">
-<LOCAL>/boot/config/plugins/couchpotato_v2/couchpotato_v2.png</LOCAL>
+<FILE Name="/usr/local/emhttp/plugins/couchpotato_v2/couchpotato_logo.png">
+<LOCAL>/boot/config/plugins/couchpotato_v2/couchpotato_logo.png</LOCAL>
 </FILE>
 
 <FILE Name="/usr/local/emhttp/plugins/couchpotato_v2/couchpotato_v2.php">
@@ -353,24 +355,25 @@ if (file_exists($couchpotato_configfile))
 		</table>
 	</form>
     <hr>
-	<?$couchpotato_datacheck?>
+<p style="font-size:16px;"><b>Additional informations:</b></p>	
 <? if ($couchpotato_installed=="yes"): ?>
 	<? if ($couchpotato_running=="yes"): ?>
-		<p class=ContentTitle><a href="http://<?=$var['NAME'];?>:<?=$couch_port;?>" target="_blank">CouchPotato v2</a> is running with version: <?=$couchpotato_curversion;?></p>
+		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$couch_port;?>" target="_blank">CouchPotato v2</a> is running with version: <b><?=$couchpotato_curversion;?></b></p>
 	<? else: ?>
-		<p class=ContentTitle>CouchPotato v2 is not running!</p>
+		<p style="margin-left:10px;"><b>CouchPotato v2 is not running</b></p>
 	<? endif; ?>
 	<? if ($couchpotato_installdirsize!=0 && $couchpotato_installdirsize!=""): ?>
 		<? if ($couchpotato_cfg["INSTALLDIR"] == $couchpotato_datadir): ?>
-			<p class=ContentTitle>CouchPotato v2 storage memory usage: install + data directory: <?=$couchpotato_installdirsize?></p>
+			<p style="margin-left:10px;">CouchPotato v2 storage memory usage: install + data directory: <b><?=$couchpotato_installdirsize?></b></p>
 		<? else: ?>
-			<p class=ContentTitle>CouchPotato v2 storage memory usage: install directory: <?=$couchpotato_installdirsize?>, data directory: <?=$couchpotato_datadirsize?></p>
+			<p style="margin-left:10px;">CouchPotato v2 storage memory usage: install directory: <b><?=$couchpotato_installdirsize?></b>, data directory: <b><?=$couchpotato_datadirsize?></b></p>
 		<? endif; ?>
 	<? endif; ?>
+	<?=$couchpotato_datacheck?>
 	<? if (strcmp($couchpotato_curversion, $couchpotato_newversion)!=0 && $couchpotato_curversion!="couldn't determine the CouchPotato v2 version, please run CouchPotato V2 first"): ?>
 		<form name="coucpotato_settings" method="POST" action="/update.htm" target="progressFrame">
 			<input type="hidden" name="cmd" value="/etc/rc.d/rc.couchpotato_v2 update">
-			<p class=ContentTitle>Update available to version: <?=$couchpotato_newversion;?></p>
+			<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <b><?=$couchpotato_newversion;?></b></p>
 			<table style="align:center;">
 				<tr>
 					<td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>
@@ -379,7 +382,7 @@ if (file_exists($couchpotato_configfile))
 		</form>	 
 	<? endif; ?>
 <? else: ?>
-	<p class=ContentTitle>CouchPotato v2 is not installed</p>
+	<p style="margin-left:10px;"><b>CouchPotato v2 is not installed</b></p>
 <? endif; ?>	
 
 <script type="text/javascript">
