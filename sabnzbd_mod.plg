@@ -18,6 +18,7 @@
 2012-05-15 0.7.3-ww         - added some improvements
 2012-05-24 0.7.4-influenced - Added message indicating whether data directory will survive a reboot or will be lost
 2012-05-25-ww				- added some formatting in web layout
+2012-05-29-ww			    - little fixes
 
 This Plugin installs and controls SABnzbd+ for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -319,14 +320,14 @@ case "$1" in
 	'disable')
 		sabnzbd_disable
 	;;
-	'check_update')
-		sabnzbd_check_update
-	;;
-	'update')
-		sabnzbd_update
-	;;
 	'install')
 		sabnzbd_install
+	;;	
+	'update')
+		sabnzbd_update
+	;;	
+	'check_update')
+		sabnzbd_check_update
 	;;
 	'version')
 		sabnzbd_version
@@ -336,7 +337,7 @@ case "$1" in
 		sabnzbd_datacheck
 	;;
 	*)
-		echo "usage $0 start|stop|restart|enable|disable|update"
+		echo "usage $0 start|stop|restart|enable|disable|install|update|check_update|version|datacheck"
 esac
 ]]>
 </INLINE>
@@ -367,9 +368,9 @@ $sabnzbd_cfg = parse_ini_file( "/boot/config/plugins/sabnzbd/sabnzbd.cfg");
 $sabnzbd_installed = file_exists( $sabnzbd_cfg["INSTALLDIR"] . "/SABnzbd.py" ) ? "yes" : "no";
 if ($sabnzbd_installed=="yes")
 {
+	$sabnzbd_datacheck = shell_exec ( "/etc/rc.d/rc.sabnzbd datacheck" );
 	$sabnzbd_running = file_exists( "/var/run/sabnzbd/sabnzbd-".$sabnzbd_cfg['PORT'].".pid") ? "yes" : "no";
 	$sabnzbd_update  = shell_exec( "/etc/rc.d/rc.sabnzbd check_update" );
-	$sabnzbd_datacheck = shell_exec ( "/etc/rc.d/rc.sabnzbd datacheck" );
 	$sabnzbd_curversion  = shell_exec( "/etc/rc.d/rc.sabnzbd version" );
 	$sabnzbd_stableversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,\"\");print}' | sed -n 1p" );
 	$sabnzbd_betaversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/eta/{gsub(/\015/,\"\");print}' | sed -n 1p" );

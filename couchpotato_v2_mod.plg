@@ -8,6 +8,7 @@
 2012-05-17 0.3-ww	     - added lots of improvments + storage/memory used by install & data dirs
 2012-05-17 0.4-influnced - Added message indicating whether data directory will survive a reboot or will be lost
 2012-05-25-ww			 - put some fixes + layout modifications
+2012-05-29-ww			 - little fixes
 
 This Plugin installs and controls CouchPotato v2 for unRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -249,9 +250,6 @@ case "$1" in
 	'restart')
 		couchpotato_restart
 	;;
-	'update')
-		couchpotato_update
-	;;
 	'enable')
 		couchpotato_enable $2 $3 $4 $5
 	;;
@@ -261,11 +259,14 @@ case "$1" in
 	'install')
 		couchpotato_install
 	;;
+	'update')
+		couchpotato_update
+	;;
 	'datacheck')
 		couchpotato_datacheck
 	;;
 	*)
-		echo "usage $0 start|stop|restart|enable|disable|update"
+		echo "usage $0 start|stop|restart|enable|disable|install|update|datacheck"
 esac
 ]]>
 </INLINE>
@@ -294,11 +295,11 @@ Title="CouchPotato v2"
 <?PHP
 $couchpotato_cfg = parse_ini_file( "/boot/config/plugins/couchpotato_v2/couchpotato_v2.cfg");
 $couchpotato_installed = file_exists( $couchpotato_cfg["INSTALLDIR"] . "/CouchPotato.py" ) ? "yes" : "no";
-$couchpotato_datacheck = shell_exec ( "/etc/rc.d/rc.couchpotato_v2 datacheck" );
 $couchpotato_configfile = $couchpotato_cfg["CONFIGFILE"];
 $couchpotato_datadir = trim(shell_exec( "cat \"$couchpotato_configfile\" | grep 'data_dir' | cut -d' ' -f3" ));
 if ($couchpotato_installed=="yes")
 {
+	$couchpotato_datacheck = shell_exec ( "/etc/rc.d/rc.couchpotato_v2 datacheck" );
 	$couchpotato_running = file_exists( "/var/run/couchpotato_v2/couchpotato_v2.pid") ? "yes" : "no";
 	if (file_exists("$couchpotato_datadir" . "/cache/version"))
 		$couchpotato_curversion = trim(shell_exec( "cat \"$couchpotato_datadir\"/cache/version | cut -d '\"' -f6- | sed 's/\(.*\)../\\1/'" ));

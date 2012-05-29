@@ -6,6 +6,7 @@
 2012-05-24 - 0.2-ww		       		   - added newest dependencies + install and data dir sizes + some improvements
 2012-05-24 - 0.3-influenced			   - added message indicated if data directory will survuve a reboot or not
 2012-05-25-ww						   - added some layou modifications  
+2012-05-29-ww			 			   - little fixes
 
 This Plugin installs and controls headphones for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -244,11 +245,14 @@ case "$1" in
 	'install')
 		headphones_install
 	;;
+	'update')
+		headphones_update
+	;;
 	'datacheck')
 		headphones_datacheck
 	;;
 	*)
-		echo "usage $0 start|stop|restart|enable|disable"
+		echo "usage $0 start|stop|restart|enable|disable|install|update|datacheck"
 esac
 ]]>
 </INLINE>
@@ -276,10 +280,10 @@ Title="Headphones"
 <![CDATA[
 <?PHP
 $headphones_cfg = parse_ini_file( "/boot/config/plugins/headphones/headphones.cfg");
-$headphones_datacheck = shell_exec ( "/etc/rc.d/rc.headphones datacheck" );
 $headphones_installed = file_exists( $headphones_cfg["INSTALLDIR"] . "/Headphones.py" ) ? "yes" : "no";
 if ($headphones_installed=="yes")
 {
+	$headphones_datacheck = shell_exec ( "/etc/rc.d/rc.headphones datacheck" );
 	$headphones_running = file_exists( "/var/run/headphones/headphones-".$headphones_cfg['PORT'].".pid") ? "yes" : "no";
 	if (file_exists($headphones_cfg["DATADIR"] . "/version.txt"))
 		$headphones_curversion = trim(shell_exec( "cat $headphones_cfg[DATADIR]/version.txt" ));
@@ -294,7 +298,7 @@ if ($headphones_installed=="yes")
 		<input type="hidden" name="cmd" value="/etc/rc.d/rc.headphones">
 		<table class="settings">
 			<tr>
-				<td>Enable headphones:</td>
+				<td>Enable Headphones:</td>
 				<td>
 					<select name="arg1" size="1" onChange="checkINSTALLDIR(this.form);">
 						<?=mk_option($headphones_cfg['SERVICE'], "disable", "No");?>

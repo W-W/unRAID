@@ -23,6 +23,7 @@
 2012-05-18 0.3-ww         	- added storage/memory used by install & data dirs + some improvements
 2012-05-22 0.4-ww         	- added install directory support
 2012-05-25-ww         		- added some modifications in web layout + data persistency info
+2012-05-29-ww			    - little fixes
 
 This Plugin installs and controls Plex Media Server for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -366,6 +367,12 @@ case "$1" in
   		sleep 1
   		plex_start
   	;;
+	'enable')
+  		plex_enable $2 $3 $4 $5
+  	;;
+	'disable')
+  		plex_disable $2 $3 $4 $5
+  	;;	
   	'install')
   		plex_install
   	;;
@@ -378,17 +385,11 @@ case "$1" in
   	'version')
   		plex_version
   	;;
-	'enable')
-  		plex_enable $2 $3 $4 $5
-  	;;
-	'disable')
-  		plex_disable $2 $3 $4 $5
-  	;;
 	'datacheck')
 		plex_datacheck
 	;;
 	*)
-  		echo "usage $0 start|stop|restart|update|version|newversion"
+  		echo "usage $0 start|stop|restart|enable|disable|install|update|newversion|version|datacheck"
 esac
 ]]>
 </INLINE>
@@ -416,10 +417,10 @@ Title="Plex Media Server"
 <![CDATA[
 <?PHP
 $plex_cfg = parse_ini_file( "/boot/config/plugins/plex/plex_settings.cfg");
-$plex_datacheck = shell_exec ( "/etc/rc.d/rc.plex datacheck" );
 $plex_installed = file_exists( $plex_cfg["PLEX_INSTALLDIR"] . "/Plex Media Server" ) ? "yes" : "no";
 if ($plex_installed=="yes")
 {
+	$plex_datacheck = shell_exec ( "/etc/rc.d/rc.plex datacheck" );
 	$plex_running = file_exists( "/var/run/plex/plex.pid") ? "yes" : "no";
 	$plex_version = shell_exec( "/etc/rc.d/rc.plex version" );
 	$plex_newversion = shell_exec( "/etc/rc.d/rc.plex newversion" );
@@ -479,7 +480,7 @@ if ($plex_installed=="yes")
 	<? if (trim($plex_newversion) == "true"): ?>
 		<form name="plex_settings" method="POST" action="/update.htm" target="progressFrame">
 			<input type="hidden" name="cmd" value="/etc/rc.d/rc.plex update">
-			<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <b><?=$plex_newestversion;?></b></p>
+			<p style="margin-left:10px;">Update available to version: <b><?=$plex_newestversion;?></b></p>
 			<table style="align:center;">
 				<tr>
 					<td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>

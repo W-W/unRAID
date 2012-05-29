@@ -12,6 +12,7 @@
 2012-05-22 0.6-ww   	    - added storage/memory used by install & data dirs + some improvements
 2012-05-24 0.7-influenced   - added message indicating whether data directory would be saved during reboot or lost
 2012-05-25-ww		    	- added some formatting in web layout
+2012-05-29-ww			    - little fixes
 
 This Plugin installs and controls Sickbeard for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
@@ -237,9 +238,6 @@ case "$1" in
 	'restart')
 		sickbeard_restart
 	;;
-	'update')
-		sickbeard_update
-	;;
 	'enable')
 		sickbeard_enable $2 $3 $4 $5
 	;;
@@ -249,11 +247,14 @@ case "$1" in
 	'install')
 		sickbeard_install
 	;;
+	'update')
+		sickbeard_update
+	;;
 	'datacheck')
 		sickbeard_datacheck
 	;;
 	*)
-		echo "usage $0 start|stop|restart|enable|disable|update"
+		echo "usage $0 start|stop|restart|enable|disable|install|update|datacheck"
 esac
 ]]>
 </INLINE>
@@ -281,10 +282,10 @@ Title="SickBeard"
 <![CDATA[
 <?PHP
 $sickbeard_cfg = parse_ini_file( "/boot/config/plugins/sickbeard/sickbeard.cfg" );
-$sickbeard_datacheck = shell_exec ( "/etc/rc.d/rc.sickbeard datacheck" );
 $sickbeard_installed = file_exists( $sickbeard_cfg["INSTALLDIR"] . "/SickBeard.py" ) ? "yes" : "no";
 if ($sickbeard_installed=="yes")
 {
+	$sickbeard_datacheck = shell_exec ( "/etc/rc.d/rc.sickbeard datacheck" );
 	$sickbeard_running = file_exists( "/var/run/sickbeard/sickbeard.pid") ? "yes" : "no";
 	if (file_exists($sickbeard_cfg["DATADIR"] . "/version.txt"))
 		$sickbeard_curversion = trim(shell_exec( "cat $sickbeard_cfg[DATADIR]/version.txt" ));
@@ -300,7 +301,7 @@ if ($sickbeard_installed=="yes")
 		<input type="hidden" name="cmd" value="/etc/rc.d/rc.sickbeard">
 		<table class="settings">
 			<tr>
-				<td>Enable sickbeard:</td>
+				<td>Enable SickBeard:</td>
 				<td>
 					<select name="arg1" size="1"  onChange="checkINSTALLDIR(this.form);">
 						<?=mk_option($sickbeard_cfg['SERVICE'], "disable", "No");?>
@@ -353,7 +354,7 @@ if ($sickbeard_installed=="yes")
 		<? endif; ?>
 	<? endif; ?>
 	<?=$sickbeard_datacheck?>
-	<? if (strcmp($couchpotato_curversion, $couchpotato_newversion)!=0 && $couchpotato_curversion!="couldn't determine the SickBeard version, please run Update Now at the top of the SickBeard web page first"): ?>
+	<? if (strcmp($sickbeard_curversion, $sickbeard_newversion)!=0 && $sickbeard_curversion!="couldn't determine the SickBeard version, please run Update Now at the top of the SickBeard web page first"): ?>
 		<form name="sickbeard_settings" method="POST" action="/update.htm" target="progressFrame">
 			<input type="hidden" name="cmd" value="/etc/rc.d/rc.sickbeard update">
 			<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <?=$sickbeard_newversion;?></p>
