@@ -1,0 +1,471 @@
+<?xml version='1.0' standalone='yes'?>
+<PLUGIN>
+
+<!--
+2012-05-29 0.1-ww	- first release
+
+This Plugin installs and controls LazyLibrarian for UnRaid.
+All dependencies are installed as needed and everything is controlable from the webgui
+-->
+
+<FILE Name="/boot/packages/python-2.6.6-i486-1.txz" Run="upgradepkg --install-new">
+<URL>http://slackware.cs.utah.edu/pub/slackware/slackware-13.37/slackware/d/python-2.6.6-i486-1.txz</URL>
+<MD5>b8de0c9f8b89aa7b3c89823d20076867</MD5>
+</FILE>
+<FILE Name="/boot/packages/sqlite-3.7.5-i486-1.txz" Run="upgradepkg --install-new">
+<URL>http://slackware.cs.utah.edu/pub/slackware/slackware-13.37/slackware/ap/sqlite-3.7.5-i486-1.txz</URL>
+<MD5>6786d3764cb294ecb71cdd24e6d171d1</MD5>
+</FILE>
+<FILE Name="/boot/packages/curl-7.21.4-i486-1.txz" Run="upgradepkg --install-new">
+<URL>http://slackware.osuosl.org/slackware-13.37/slackware/n/curl-7.21.4-i486-1.txz</URL>
+<MD5>e32449e0588ef54df8524827028972e8</MD5>
+</FILE>
+<FILE Name="/boot/packages/git-1.7.4.4-i486-1.txz" Run="upgradepkg --install-new">
+<URL>http://slackware.osuosl.org/slackware-13.37/slackware/d/git-1.7.4.4-i486-1.txz</URL>
+<MD5>5d92bd44e67618dfdacc2e2fa9a41821</MD5>
+</FILE>
+<FILE Name="/boot/config/plugins/lazylibrarian/librarian.png">
+<URL>http://dl.dropbox.com/u/49442039/librarian.png</URL>
+</FILE>
+
+<!-- clean up previous install -->
+<FILE Name="/tmp/lazylibrarian-cleanup" Run="/bin/bash">
+<INLINE>
+<![CDATA[
+rm -f /etc/rc.d/rc.lazylibrarian
+rm -f -R /usr/local/emhttp/plugins/lazylibrarian
+rm /tmp/lazylibrarian-cleanup
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/boot/config/plugins/lazylibrarian/lazylibrarian.cfg">
+<INLINE>
+<![CDATA[
+# lazylibrarian configuration
+SERVICE="disable"
+INSTALLDIR="/usr/local/lazylibrarian"
+DATADIR="/usr/local/lazylibrarian"
+RUNAS="nobody"
+PORT="8085"
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/etc/rc.d/rc.lazylibrarian" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/sh
+# Start/stop/restart/enable/disable lazylibrarian.
+
+lazylibrarian_start()
+{
+	# no-op if not enabled
+	if [ $SERVICE != "enable" ]; then
+		return
+	fi
+
+	# no-op if already running
+	if [ -r /var/run/lazylibrarian/lazylibrarian-$PORT.pid ]; then
+		return
+	fi
+	
+	# if directory doesn't exist or lazylibrarian is not found, install it
+	if [[ "$INSTALLDIR" != "" &&  ! -e "$INSTALLDIR/LazyLibrarian.py" ]]; then
+		lazylibrarian_install
+	fi
+	
+	if [ ! -d $DATADIR ]; then
+		mkdir $DATADIR
+        chown -R nobody:users $DATADIR
+	    chmod -R 777 $DATADIR
+	fi
+
+	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/LazyLibrarian.py -d --port $PORT --datadir $DATADIR --nolaunch --pidfile /var/run/lazylibrarian/lazylibrarian-$PORT.pid"
+	echo -n "Starting lazylibrarian:  $CMDLINE"
+	$CMDLINE
+	echo
+  
+	while [ ! -e /var/run/lazylibrarian/lazylibrarian-$PORT.pid  ]; do
+		sleep 1
+	done
+	  
+	echo -n "please refresh the page"
+}
+
+lazylibrarian_stop()
+{
+	# no-op if not running
+	if [ ! -r /var/run/lazylibrarian/lazylibrarian-$PORT.pid ]; then
+		return
+	fi
+	
+	echo -n "Stopping lazylibrarian..."
+	sleep 0.5
+ 	echo
+	kill $(cat /var/run/lazylibrarian/lazylibrarian-$PORT.pid)
+	echo
+  
+	sleep 1
+  
+	if [ -f /var/run/lazylibrarian/lazylibrarian-$PORT.pid ]; then
+		rm /var/run/lazylibrarian/lazylibrarian-$PORT.pid
+	fi
+  
+	while [ -e /var/run/lazylibrarian/lazylibrarian-$PORT.pid  ]; do
+		sleep 1
+	done
+}
+
+lazylibrarian_restart()
+{
+	lazylibrarian_stop
+	sleep 1
+	lazylibrarian_start
+}
+
+lazylibrarian_update()
+{
+	lazylibrarian_stop
+	sleep 1
+	lazylibrarian_install
+	sleep 1
+	lazylibrarian_start
+}
+
+write_config()
+{
+	echo "# lazylibrarian configuration" > /boot/config/plugins/lazylibrarian/lazylibrarian.cfg
+	echo "SERVICE=\"$SERVICE\"" >> /boot/config/plugins/lazylibrarian/lazylibrarian.cfg
+	echo "INSTALLDIR=\"$INSTALLDIR\"" >> /boot/config/plugins/lazylibrarian/lazylibrarian.cfg
+	echo "DATADIR=\"$DATADIR\"" >> /boot/config/plugins/lazylibrarian/lazylibrarian.cfg
+	echo "PORT=\"$PORT\"" >> /boot/config/plugins/lazylibrarian/lazylibrarian.cfg
+	echo "RUNAS=\"$RUNAS\"" >> /boot/config/plugins/lazylibrarian/lazylibrarian.cfg
+ }
+
+lazylibrarian_enable()
+{
+	# if not already enabled, enable it
+	if [ "$SERVICE" != "enable" ]; then
+		SERVICE=enable
+  
+		PORT="$2"
+		INSTALLDIR="$3"
+		DATADIR="$4"
+
+		if [ $DATADIR == "" ]; then
+			$DATADIR=$INSTALLDIR
+		fi
+	
+		if [ $RUNAS != $1 ]; then
+			chown -R $1:users "$INSTALLDIR"
+		fi
+	
+		RUNAS="$1"
+	
+		# create lazylibrarian user if necessary
+		if [[ $RUNAS != "nobody" && $RUNAS != "root" ]]; then
+			if ( ! grep -q ^$RUNAS /etc/passwd ); then
+				useradd -r -g users -d / -s /bin/false $RUNAS &> /dev/null
+				cp /etc/passwd /etc/shadow /boot/config
+			fi
+		fi
+	
+		write_config
+	fi
+
+	# enabling also starts it
+	lazylibrarian_start
+}
+
+lazylibrarian_disable()
+{
+	lazylibrarian_stop
+	SERVICE=disable
+	write_config
+}
+
+lazylibrarian_install()
+{	
+	echo "installing latest Version of lazylibrarian"
+	
+	if [ ! -e "$INSTALLDIR" ]; then 
+		mkdir -p $INSTALLDIR
+    fi
+	if [ ! -e "$DATADIR" ]; then 
+		mkdir -p $DATADIR
+    fi
+	
+	cd /tmp
+#	git clone https://github.com/Mar2zz/LazyLibrarian	- when LazyLibrarian will be finished this line should be enabled
+	git clone https://github.com/W-W/LazyLibrarian
+	cp -Rf /tmp/LazyLibrarian/* $INSTALLDIR
+	rm -Rf /tmp/LazyLibrarian
+	chown -R $RUNAS:users "$INSTALLDIR" "$DATADIR"
+}
+lazylibrarian_datacheck() 
+{
+	array=( ramfs proc tempfs sysfs )
+	fs=$( stat -f -c '%T' $DATADIR )
+	for i in "${array[@]}"
+	do
+		if [ $i = $fs ]; then
+		    echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+			break
+		elif [ $i = msdos ]; then
+			echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			break
+		else
+			echo "<p style="color:green\;margin-left:10px\;">Your data will persist after a reboot</p>"
+			break
+		fi
+	done
+}
+# read our configuration
+source /boot/config/plugins/lazylibrarian/lazylibrarian.cfg
+
+case "$1" in
+	'start')
+		lazylibrarian_start
+	;;
+	'stop')
+		lazylibrarian_stop
+	;;
+	'restart')
+		lazylibrarian_restart
+	;;
+	'enable')
+		lazylibrarian_enable $2 $3 $4 $5
+	;;
+	'disable')
+		lazylibrarian_disable
+	;;
+	'install')
+		lazylibrarian_install
+	;;
+	'update')
+		lazylibrarian_update
+	;;
+	'datacheck')
+		lazylibrarian_datacheck
+	;;
+	*)
+		echo "usage $0 start|stop|restart|enable|disable|install|update|datacheck"
+esac
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/lazylibrarian/lazylibrarian.page">
+<INLINE>
+<![CDATA[
+Menu="NetworkServices"
+Icon="librarian.png"
+Version="0.1"
+Author="Wojciech Walaszek"
+Type="php"
+Title="LazyLibrarian"
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/lazylibrarian/librarian.png">
+<LOCAL>/boot/config/plugins/lazylibrarian/librarian.png</LOCAL>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/lazylibrarian/lazylibrarian.php">
+<INLINE>
+<![CDATA[
+<?PHP
+$lazylibrarian_cfg = parse_ini_file( "/boot/config/plugins/lazylibrarian/lazylibrarian.cfg");
+$lazylibrarian_installed = file_exists( $lazylibrarian_cfg["INSTALLDIR"] . "/LazyLibrarian.py" ) ? "yes" : "no";
+if ($lazylibrarian_installed=="yes")
+{
+	$lazylibrarian_datacheck = shell_exec ( "/etc/rc.d/rc.lazylibrarian datacheck" );
+	$lazylibrarian_running = file_exists( "/var/run/lazylibrarian/lazylibrarian-".$lazylibrarian_cfg['PORT'].".pid") ? "yes" : "no";
+	if (file_exists($lazylibrarian_cfg["DATADIR"] . "/version.txt"))
+		$lazylibrarian_curversion = trim(shell_exec( "cat $lazylibrarian_cfg[DATADIR]/version.txt" ));
+	else
+		$lazylibrarian_curversion = "couldn't determine the LazyLibrarian version"; 
+	$lazylibrarian_newversion = trim(shell_exec( "cd /tmp/ && wget -q -O feed.atom --no-check-certificate https://github.com/Mar2zz/LazyLibrarian/commits/master.atom && cat feed.atom | sed -n 's|tag:github.com,2008:Grit::Commit/\(.*\)|\\1|p' | sed '1q;d' | cut -d' ' -f5- | sed 's/....\(.*\)...../\\1/' && rm feed.atom" ));		
+	$lazylibrarian_installdirsize = trim(shell_exec( "if [ -e $lazylibrarian_cfg[INSTALLDIR] ]; then du -sh $lazylibrarian_cfg[INSTALLDIR] | cut -f1; else echo 0; fi"));
+	$lazylibrarian_datadirsize = trim(shell_exec( "if [ -e $lazylibrarian_cfg[DATADIR] ]; then du -sh $lazylibrarian_cfg[DATADIR] | cut -f1; else echo 0; fi" ));
+}
+?>
+	<form name="lazylibrarian_settings" method="POST" action="/update.htm" target="progressFrame">
+		<input type="hidden" name="cmd" value="/etc/rc.d/rc.lazylibrarian">
+		<table class="settings">
+			<tr>
+				<td>Enable LazyLibrarian:</td>
+				<td>
+					<select name="arg1" size="1" onChange="checkINSTALLDIR(this.form);">
+						<?=mk_option($lazylibrarian_cfg['SERVICE'], "disable", "No");?>
+						<?=mk_option($lazylibrarian_cfg['SERVICE'], "enable", "Yes");?>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>Install directory:</td>
+				<td><input type="text" name="arg4" maxlength="60" value="<?=$lazylibrarian_cfg['INSTALLDIR'];?>"></td>
+			</tr>
+			<tr>
+				<td>Data directory:</td>
+				<td><input type="checkbox" name="use_data" <?=($lazylibrarian_cfg['DATADIR']!=$lazylibrarian_cfg['INSTALLDIR'])?"checked=\"checked\"":"";?>  onChange="checkDATADIR(this.form);"> <input type="text" name="arg5" maxlength="60" value="<?=$lazylibrarian_cfg['DATADIR'];?>"></td>
+			</tr>
+			<tr>
+				<td>Port:</td>
+				<td><input type="text" name="arg3" maxlength="40" value="<?=$lazylibrarian_cfg['PORT'];?>"></td>
+			</tr>
+			<tr>
+				<td>Run as user:</td>
+				<td>
+					<select name="runas" size="1"  onChange="checkUSER(this.form);">
+						<?=mk_option($lazylibrarian_cfg['RUNAS'], "nobody", "nobody");?>
+						<?=mk_option($lazylibrarian_cfg['RUNAS'], "root", "root");?>
+						<option value='other'<?=($lazylibrarian_cfg['RUNAS'] != "root" && $lazylibrarian_cfg['RUNAS'] != "nobody")?" selected=yes":"" ;?>>other</option>
+					</select>
+					<input type="text" name="arg2" maxlength="40" value="<?=$lazylibrarian_cfg['RUNAS'];?>">
+				</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td><input type="submit" name="runCmd" value="Apply"><button type="button" onClick="done();">Done</button></td>
+			</tr>
+		</table>
+	</form>
+	<hr>
+<p style="font-size:16px;"><b>Additional informations:</b></p>
+<? if ($lazylibrarian_installed=="yes"): ?>	
+	<? if ($lazylibrarian_running=="yes"): ?>
+		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$lazylibrarian_cfg['PORT'];?>" target="_blank">LazyLibrarian</a> is running with version: <b><?=$lazylibrarian_curversion;?></b></p>
+	<? else: ?>
+		<p style="margin-left:10px;"><b>LAzyLibrarian is not running</b></p>
+	<? endif; ?>
+	<? if ($lazylibrarian_installdirsize!=0 && $lazylibrarian_installdirsize!=""): ?>
+		<? if ($lazylibrarian_cfg["INSTALLDIR"] == $lazylibrarian_cfg["DATADIR"]): ?>
+			<p style="margin-left:10px;">LazyLibrarian storage memory usage: install + data directory: <b><?=$lazylibrarian_installdirsize?></b></p>
+		<? else: ?>
+			<p style="margin-left:10px;">LazyLibrarian storage memory usage: install directory: <b><?=$helazylibrarian_installdirsize?></b>, data directory: <b><?=$lazylibrarian_datadirsize?></b></p>
+		<? endif; ?>
+	<? endif; ?>
+	<?=$lazylibrarian_datacheck?>
+	<? if (strcmp($lazylibrarian_curversion, $lazylibrarian_newversion)!=0 && $lazylibrarian_curversion!="couldn't determine the LazyLibrarian version"): ?>
+		<form name="lazylibrarian_settings" method="POST" action="/update.htm" target="progressFrame">
+			<input type="hidden" name="cmd" value="/etc/rc.d/rc.lazylibrarian update">
+			<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <b><?=$lazylibrarian_newversion;?></b></p>
+			<table style="align:center;">
+				<tr>
+					<td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>
+				</tr>
+			</table>
+		</form>	 
+	<? endif; ?>
+<? else: ?>
+	<p style="margin-left:10px;"><b>LazyLibrarian is not installed</b></p>
+<? endif; ?>	
+
+<script type="text/javascript">
+function checkINSTALLDIR(form)
+{
+   if ("<?=$lazylibrarian_running;?>" == "yes")
+   {
+		form.arg2.readOnly = true;
+		form.arg3.readOnly = true;
+		form.arg4.readOnly = true;
+		form.arg5.readOnly = true;
+		form.runas.disabled = true;
+		form.use_data.disabled = true;
+   }
+   else
+   {
+		form.arg2.readOnly = (form.arg1.value == "enable");
+		form.arg3.readOnly = (form.arg1.value == "enable");
+		form.arg4.readOnly = (form.arg1.value == "enable");
+		form.arg5.readOnly = (form.arg1.value == "enable");
+		form.runas.disabled = (form.arg1.value == "enable");
+		form.use_data.disabled = (form.arg1.value == "enable");
+	}
+}
+
+function checkUSER(form)
+{
+	if (form.runas.selectedIndex < 2 )
+	{
+		form.arg2.value = form.runas.options[form.runas.selectedIndex].value;
+		form.arg2.type = "hidden";
+	}
+	else
+	{
+		form.arg2.value = "<?=$lazylibrarian_cfg['RUNAS'];?>";
+		form.arg2.type = "text";
+	}
+}
+
+function checkDATADIR(form)
+{
+	if (form.use_data.checked == false )
+	{
+		form.arg5.value = form.arg4.value;;
+		form.arg5.type = "hidden";
+	}
+	else
+	{
+		form.arg5.value = "<?=$lazylibrarian_cfg['DATADIR'];?>";
+		form.arg5.type = "text";
+	}
+}
+
+checkINSTALLDIR(document.lazylibrarian_settings);
+checkUSER(document.lazylibrarian_settings);
+checkDATADIR(document.lazylibrarian_settings);
+</script>
+]]>
+</INLINE>
+</FILE>
+
+<!-- event handler -->
+<FILE Name="/usr/local/emhttp/plugins/lazylibrarian/event/disks_mounted" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/bash
+/etc/rc.d/rc.lazylibrarian start
+]]>
+</INLINE>
+</FILE>
+
+<!-- event handler -->
+<FILE Name="/usr/local/emhttp/plugins/lazylibrarian/event/unmounting_disks" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/bash
+/etc/rc.d/rc.lazylibrarian stop
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/tmp/lazylibrarian-install" Run="/bin/bash">
+<INLINE>
+<![CDATA[
+# include our config vars
+source /boot/config/plugins/lazylibrarian/lazylibrarian.cfg
+
+# create lazylibrarian-writable directory for pid file
+if [ ! -e /var/run/lazylibrarian ]; then
+  mkdir /var/run/lazylibrarian
+  chown $RUNAS:users /var/run/lazylibrarian
+  chmod 0777 /var/run/lazylibrarian
+fi
+rm /tmp/lazylibrarian-install
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/var/log/plugins/lazylibrarian">
+<INLINE>
+<![CDATA[
+
+]]>
+</INLINE>
+</FILE>
+
+</PLUGIN>
