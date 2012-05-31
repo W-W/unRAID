@@ -1,4 +1,4 @@
-<text-align:center>## unRAID Plug-ins</text>
+## unRAID Plug-ins
 ## Plug-ins by Influencer & WW
 
 Our plug-ins try to unlock your unRAID servers potential, adding functionality to your server as well as keeping it easy to use.
