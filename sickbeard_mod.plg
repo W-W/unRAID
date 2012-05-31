@@ -287,8 +287,8 @@ if ($sickbeard_installed=="yes")
 {
 	$sickbeard_datacheck = shell_exec ( "/etc/rc.d/rc.sickbeard datacheck" );
 	$sickbeard_running = file_exists( "/var/run/sickbeard/sickbeard.pid") ? "yes" : "no";
-	if (file_exists($sickbeard_cfg["DATADIR"] . "/version.txt"))
-		$sickbeard_curversion = trim(shell_exec( "cat $sickbeard_cfg[DATADIR]/version.txt" ));
+	if (file_exists($sickbeard_cfg["INSTALLDIR"] . "/version.txt"))
+		$sickbeard_curversion = trim(shell_exec( "cat $sickbeard_cfg[INSTALLDIR]/version.txt" ));
 	else
 		$sickbeard_curversion = "couldn't determine the SickBeard version, please run Update Now at the top of the SickBeard web page first"; 
 	$sickbeard_newversion = trim(shell_exec( "cd /tmp/ && wget -q -O feed.atom --no-check-certificate https://github.com/midgetspy/Sick-Beard/commits/master.atom && cat feed.atom | sed -n 's|tag:github.com,2008:Grit::Commit/\(.*\)|\\1|p' | sed '1q;d' | cut -d' ' -f5- | sed 's/....\(.*\)...../\\1/' && rm feed.atom" ));		
