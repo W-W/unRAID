@@ -1,20 +1,19 @@
-<h1><text-align:center>unRAID Plug-ins</text></h1>
-<h3><text-align:center>Plug-ins by Influencer & WW</text></h3>
+unRAID Plug-ins
+Plug-ins by Influencer & WW
 
-<p>Our plug-ins try to unlock your unRAID servers potential, adding functionality to your server as well as keeping it easy to use.</p>
-<p>
+Our plug-ins try to unlock your unRAID servers potential, adding functionality to your server as well as keeping it easy to use.
+
 Our first releases, Sabnzbd, Sickbeard, Couchpotato_V2, and Headphones apps are all webgui based plugins that streamline your media collection. These apps are popular among
 many in the community. Some of these have plug-ins by other authors, we've modified and updated them to remove bugs, add functionality, and introduce new features.
-</p>
 
-<p>
+
+
 A couple features to note:
-<ul type="circle">
-<li>Message letting you know at a glance whether your data and configuration files will remain after a reboot</li>
-<li>Indicator letting the user know how much disk space is being used by the application</li>
-<li>Easy to use updater for applications that have spotty updaters or no in-app updater at all, plus update notification</li>
-<li>We are always around to answer questions, setup related and if possible, application related</li>
-</ul>
-</p>
+Message letting you know at a glance whether your data and configuration files will remain after a reboot
+Indicator letting the user know how much disk space is being used by the application
+Easy to use updater for applications that have spotty updaters or no in-app updater at all, plus update notification
+We are always around to answer questions, setup related and if possible, application related
 
-<p>We hope you enjoy our plug-ins, if you have any issues post them either on the Lime-Technology forums or here on the issues page.</p>
+
+
+We hope you enjoy our plug-ins, if you have any issues post them either on the Lime-Technology forums or here on the issues page.
