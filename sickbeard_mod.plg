@@ -13,6 +13,7 @@
 2012-05-24 0.7-influenced   - added message indicating whether data directory would be saved during reboot or lost
 2012-05-25-ww		    	- added some formatting in web layout
 2012-05-29-ww			    - little fixes
+2012-05-30-influenced	    - fixed path to version.txt for updater
 
 This Plugin installs and controls Sickbeard for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
