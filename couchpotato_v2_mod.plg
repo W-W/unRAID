@@ -208,8 +208,8 @@ couchpotato_install()
 	DATADIR="`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`"
 	if [ ! -e "$DATADIR" ]; then 
 		mkdir -p $DATADIR
-		chown nobody:users $DATADIR
-		chmod +764 $DATADIR
+		chown $RUNAS:root $DATADIR
+		chmod +766 $DATADIR
 	fi
 	if [ -e ""$DATADIR"/cache/version" ]; then 
 	echo "removing old version"
