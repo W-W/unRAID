@@ -157,7 +157,7 @@ couchpotato_enable()
 	# if not already enabled, enable it
 	if [ "$SERVICE" != "enable" ]; then
 		SERVICE=enable
-		couchpotato_change_settings $1 $2 $3 $4 $5
+		couchpotato_change_settings $1 $2 $3 $4
 		write_config
 	fi
 
@@ -170,7 +170,6 @@ couchpotato_change_settings()
 	PORT="$2"
 	INSTALLDIR="$3"
 	DATADIR="$4"
-	CONFIGDIR="$5"
 	
 	if [ $DATADIR == "" ]; then
 	  $DATADIR = "$INSTALLDIR"
@@ -195,14 +194,13 @@ couchpotato_disable()
 {
 	couchpotato_stop
 	SERVICE=disable
-	couchpotato_change_settings $1 $2 $3 $4 $5
+	couchpotato_change_settings $1 $2 $3 $4
 	write_config
 }
 
 couchpotato_install()
 {
 	echo "installing latest Version of couchpotato v2"
-	
 	if [ ! -e "$INSTALLDIR" ]; then 
 		mkdir -p $INSTALLDIR
 	fi
@@ -211,7 +209,10 @@ couchpotato_install()
 	if [ ! -e "$DATADIR" ]; then 
 		mkdir -p $DATADIR
 	fi
-	
+	if [ -e ""$DATADIR"/cache/version" ]; then 
+	echo "removing old version"
+	rm ""$DATADIR"/cache/version"
+	fi
 	cd /tmp
 	git clone https://github.com/RuudBurger/CouchPotatoServer.git
 	cp -Rf /tmp/CouchPotatoServer/* $INSTALLDIR
@@ -252,10 +253,10 @@ case "$1" in
 		couchpotato_restart
 	;;
 	'enable')
-		couchpotato_enable $2 $3 $4 $5 $6
+		couchpotato_enable $2 $3 $4 $5
 	;;
 	'disable')
-		couchpotato_disable $2 $3 $4 $5 $6
+		couchpotato_disable $2 $3 $4 $5
 	;;
 	'install')
 		couchpotato_install
@@ -335,10 +336,6 @@ if (file_exists($couchpotato_configfile))
 				<td>Data directory:</td>
 				<td><input type="checkbox" name="use_data" <?=($couchpotato_datadir!=$couchpotato_cfg['INSTALLDIR'])?"checked=\"checked\"":"";?>  onChange="checkDATADIR(this.form);"> <input type="text" name="arg5" maxlength="60" value="<?=$couchpotato_datadir;?>"></td>
 			</tr>
-			 <tr>
-        			 <td>Config file directory:</td>
-         	       		<td><input type="checkbox" name="use_config" id="use_config" <?=($couchpotato_cfg['CONFIGFILE']!=$couchpotato_cfg['INSTALLDIR'])?"checked=\"checked\"":"";?> onChange="checkCONFIGFILE(this.form);"> <input type="text" name="arg6" maxlength="60" value="<?=$couchpotato_cfg['CONFIGFILE'];?>"></td>
-        		 </tr>		
 			<tr>
 				<td>Port:</td>
 				<td><input type="text" name="arg3" maxlength="40" value="<?=$couch_port;?>"></td>
@@ -439,17 +436,6 @@ function checkDATADIR(form)
 	{
 		form.arg5.value = "<?=$couchpotato_datadir;?>";
 		form.arg5.type = "text";
-	}
-}
-
-function checkCONFIGFILE(form)
-{
-	if (form.use_config.checked == false ) {
-		form.arg6.value = form.arg5.value + "/settings.conf";;
-		form.arg6.type = "hidden";
-	} else {
-		form.arg6.value = "<?=$couchpotato_cfg['CONFIGFILE'];?>";
-		form.arg6.type = "text";
 	}
 }
 
