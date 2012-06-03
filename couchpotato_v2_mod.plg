@@ -209,7 +209,7 @@ couchpotato_install()
 	if [ ! -e "$DATADIR" ]; then 
 		mkdir -p $DATADIR
 	 	chown nobody:users $DATADIR
-		chmod +766 $DATADIR
+		chmod 766 $DATADIR
 	fi
 	if [ -e ""$DATADIR"/cache/version" ]; then 
 	echo "removing old version"
