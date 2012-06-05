@@ -1,0 +1,513 @@
+<?xml version='1.0' standalone='yes'?>
+<PLUGIN>
+
+<!--
+2012-04-15 0.1-1jr - first release
+2012-04-16 0.2-1jr - Modified to use unRAID V5.0 events instead of the unraid_addon_control.sh script
+2012-04-17 0.3-1jr - Modified the disks_mounted event to only start attempt to start serviio if it is not running
+2012-04-17 0.4-1jr - Created a dropbox account to access the ffmpeg files required by serviios transcoder
+2012-04-17 0.5-1jr - Added WebUI accessable at http://tower:8123/serviio/console
+2012-04-18 0.6-1jr - Added page, php and png files for unraid/serviio webui intergration
+2012-04-20 0.7-1jr - Included the download and installation of java jre-6u27-i586-1aj
+2012-04-20 0.8-1jr - Moved plugins to /boot/plugins and packages to /boot/packages
+2012-05-27-ww      - Moved install directory into cache drive + jre installer + layout mods
+
+This Plugin installs ffmpeg and sets up the serviio server environment.
+-->
+
+<FILE Name="/boot/packages/jre-6u27-i586-1.txz" Run="upgradepkg --install-new">
+<URL>http://carroll.cac.psu.edu/pub/linux/distributions/slackware/slackware-current/slackware/l/jre-6u27-i586-1.txz</URL>
+<MD5>a21d5346d9250290cd3b4f8305d5a7eb</MD5>
+</FILE>
+<!-- download serviio V0.6.2 if is has not already been downloaded -->
+<FILE Name="/boot/config/plugins/serviio/serviio-0.6.2-linux.tar.gz">
+<URL>http://download.serviio.org/releases/serviio-0.6.2-linux.tar.gz</URL>
+</FILE>
+<!-- download serviio-ffmpeg-1.1-1jr if is has not already been downloaded -->
+<FILE Name="/boot/config/plugins/serviio/serviio-ffmpeg-1.1-1jr.tgz">
+<URL>http://dl.dropbox.com/u/73389880/serviio-files/serviio-ffmpeg-1.1-1jr.tgz</URL>
+</FILE>
+<!-- download serviio-webui-0.6.2-d.tgz if is has not already been downloaded -->
+<FILE Name="/boot/config/plugins/serviio/serviio-webui-0.6.2-d.tgz">
+<URL>http://dl.dropbox.com/u/73389880/serviio-files/serviio-webui-0.6.2-d.tgz</URL>
+</FILE>
+<FILE Name="/boot/config/plugins/jre/jre.png">
+<URL>http://dl.dropbox.com/u/2902950/unRAID/jre/jre.png</URL>
+</FILE>
+<!-- download serviio-webui-0.6.2-d.tgz if is has not already been downloaded -->
+<FILE Name="/boot/config/plugins/serviio/serviio.png">
+<URL>http://dl.dropbox.com/u/73389880/serviio-files/serviio.png</URL>
+</FILE>
+
+<!-- clean up previous install -->
+<FILE Name="/tmp/jre-cleanup" Run="/bin/bash">
+<INLINE>
+<![CDATA[
+rm -f -R /usr/local/emhttp/plugins/jre
+rm -f /boot/config/plugins/jre/jre.cfg
+rm /tmp/jre-cleanup
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/boot/config/plugins/jre/jre.cfg">
+<INLINE>
+<![CDATA[
+# jre configuration
+VERSION="jre-6u27-i586-1aj"
+EXPECTED_VERSION="1.6.0_27"
+]]>
+</INLINE>
+</FILE>
+
+<!-- Build User Applications Page, if it doesn't exist -->
+<FILE Name="/usr/local/emhttp/plugins/webGui/UserUtils.page">
+<INLINE>
+<![CDATA[
+Author="LimeTech"
+Version="1.0.0"
+Title="User Utilities"
+Menu="Utils"
+Type="menu"
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/jre/jre.page">
+<INLINE>
+<![CDATA[
+Menu="UserUtils"
+Icon="jre.png"
+Version="jre-6u207-i586-1aj"
+Author="Alex Jung (Modified by JR)"
+Type="php"
+Title="JRE"
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/jre/jre.png">
+<LOCAL>/boot/config/plugins/jre/jre.png</LOCAL>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/jre/jre.php">
+<INLINE>
+<![CDATA[
+<?PHP
+$jre_cfg = parse_ini_file( "/boot/config/plugins/jre/jre.cfg" );
+$jre_cfg['package_directory'] = realpath(".");
+$jre_test = trim( shell_exec( "/usr/lib/java/bin/java -version 2>&1 | grep 'java' | awk '{print \$3}' | sed -e 's|\"||g'") );
+?>
+<div id="title"><span class="left">Additional informations</span></div>
+	<table>
+		<tr>
+			<td>
+				<span class="status_head" style="margin-left:10px;">Status: </span>
+				<span class="green">
+					Java <b>v<?= $jre_test; ?></b> is installed
+<?PHP
+if ($jre_test == trim($jre_cfg["EXPECTED_VERSION"])):
+?>
+					(expected: <b><?= $jre_cfg["EXPECTED_VERSION"]; ?></b>).
+<? endif; ?>
+				</span>
+			</td>
+		</tr>
+    </table>
+
+	<form name="ps3mediaserver_settings" method="POST" action="/update.htm" target="progressFrame">
+		<table class="settings">
+			<tr>
+				<td></td>
+				<td><button type="button" onClick="done();">Done</button></td>
+			</tr>
+		</table>
+	</form>
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/var/log/plugins/jre">
+<INLINE>
+<![CDATA[
+
+]]>
+</INLINE>
+</FILE>
+
+<!-- unpack the downloaded serviio if it does not already exist -->
+<FILE Name="/tmp/unpackserviio.sh" Run="/bin/bash" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/bash
+
+if [ ! -d /mnt/cache/.apps/serviio ]; then
+	mkdir -p /mnt/cache/.apps/serviio
+fi
+
+cd /boot/config/plugins/serviio
+
+if [ ! -d /mnt/cache/.apps/serviio/serviio-0.6.2 ]; then
+	tar -zxf serviio-0.6.2-linux.tar.gz -C /mnt/cache/.apps/serviio
+	tar -zxf serviio-webui-0.6.2-d.tgz -C /mnt/cache/.apps/serviio
+fi
+
+if [ ! -d /mnt/cache/.apps/serviio/ffmpeg ]; then
+	tar -zxf serviio-ffmpeg-1.1-1jr.tgz -C /mnt/cache/.apps/serviio
+fi
+
+cd /mnt/cache/.apps/serviio/ffmpeg
+sed -i 's!DIRNAME='"`cat ffsetup.sh | grep '^DIRNAME=' | cut -d'=' -f2`"'!DIRNAME=/mnt/cache/.apps/serviio/ffmpeg!' ffsetup.sh
+source ffsetup.sh
+rm -f /tmp/unpackserviio.sh
+]]>
+</INLINE>
+</FILE>
+
+<!-- Cleanup any previous plugin scripts -->
+<FILE Name="/tmp/serviio-cleanup.sh" Run="/bin/bash" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/bash
+
+#sudo -u root env > /tmp/host.cnf
+[ -d /usr/local/emhttp/plugins/serviio/ ] && rm -rf /usr/local/emhttp/plugins/serviio
+
+rm -f /etc/rc.d/rc.serviio
+rm -f /mnt/cache/.apps/serviio/serviio-webui.sh
+rm -f /tmp/serviio-cleanup.sh
+]]>
+</INLINE>
+</FILE>
+
+<!-- create the serviio-webui.cfg file -->
+<FILE Name="/mnt/cache/.apps/serviio/serviio-webui.sh" Run="/bin/bash" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/bash
+echo VERSION="0.8-1jr" > "/boot/config/plugins/serviio/serviio-webui.cfg"
+echo HOSTNAME="$(ifconfig  | grep 'inet addr:'| grep -v '127.0.0.1' | cut -d: -f2 | grep -v '^5' | awk '{ print $1}')" >> "/boot/config/plugins/serviio/serviio-webui.cfg"
+echo INSTALLDIR="/mnt/cache/.apps/serviio" >> "/boot/config/plugins/serviio/serviio-webui.cfg"
+rm -f /mnt/cache/.apps/serviio/serviio-webui.sh
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/serviio/Serviio.php">
+<INLINE>
+<![CDATA[
+<?php
+$serviio_cfg = parse_ini_file( "/boot/config/plugins/serviio/serviio-webui.cfg");
+$SERVIIOHOSTNAME = $serviio_cfg['HOSTNAME'];
+$serviio_installed = file_exists( $serviio_cfg["INSTALLDIR"] . "/serviio-0.6.2/bin/serviio.sh" ) ? "yes" : "no";
+if ($serviio_installed=="yes")
+{	
+	$serviio_datacheck = shell_exec ( "/etc/rc.d/rc.serviio datacheck" );
+	$serviio_installdirsize = trim(shell_exec( "if [ -e $serviio_cfg[INSTALLDIR] ]; then du -sh $serviio_cfg[INSTALLDIR] | cut -f1; else echo 0; fi"));
+}
+?>
+		
+<script type="text/javascript">
+<!--
+function calcHeight()
+{
+	//find the height of the internal page
+	//var the_height=document.getElementById('the_iframe').contentWindow.document.body.scrollHeight;
+	//var the_height=document.getElementById('the_iframe').contentWindow.document.body.scrollHeight;
+	//var the_width=document.getElementById('the_iframe').contentWindow.document.body.scrollWidth;
+
+	//change the height of the iframe
+	document.getElementById('the_iframe').height=document.body.scrollHeight-180;
+	//document.getElementById('the_iframe').width=document.body.scrollWidth;
+	//alert(the_height);
+	//alert(the_width);
+}
+//-->
+</script>
+
+ <center><iframe width=720 scrolling="YES" frameborder="1" height="1" id="the_iframe" src="http://<?php echo $SERVIIOHOSTNAME; ?>:8123/serviio/console" onload="calcHeight();">
+ </iframe></center>
+ 
+<div id="title"><span class="left">Additional informations</span></div>
+<? if ($serviio_installed=="yes"): ?>
+	<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:8123/serviio/console" target="_blank">Serviio</a> is installed with version: <b>0.6.2</b></p>
+	<? if ($serviio_installdirsize!=0 && $serviio_installdirsize!=""): ?>
+		<p style="margin-left:10px;">Serviio storage memory usage: install + data directory: <b><?=$serviio_installdirsize?></b></p>
+	<? endif; ?>
+	<?=$serviio_datacheck?>
+<? else: ?>
+	<p style="margin-left:10px;"><b>Serviio is not installed</b></p>
+<? endif; ?>	
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/serviio/Serviio.page">
+<INLINE>
+<![CDATA[
+Author="John Revill; Wojciech Walaszek"
+Version="0.8.1"
+Menu="NetworkServices"
+Title="Serviio Media Server"
+Type="php"
+Icon="serviio.png"
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/usr/local/emhttp/plugins/serviio/serviio.png">
+<LOCAL>/boot/config/plugins/serviio/serviio.png</LOCAL>
+</FILE>
+
+<!-- Create the serviio control script to start and stop the server -->
+<FILE Name="/etc/rc.d/rc.serviio" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/bash
+if test "$SHELL" = "/bin/sh" && test -x /bin/bash; then
+    exec /bin/bash -c "$0" "$@"
+fi
+
+####################################################################################
+# serviio daemon
+# A utility to allow start/stop/restart actions to the serviio.sh script
+#
+# Version 1.0   Initial. (2012-03-26)
+# Version 1.1   First fully functional version
+#
+# John R.
+####################################################################################
+#
+# chkconfig: 35 90 12
+# description: Serviio server
+#
+# Get function from functions library
+# . /etc/init.d/functions (ot required for slackware)
+# Start the service serviio
+
+# Get the process ID for an existing running
+# ps -o pid -C serviio.sh --no-header
+version=1.1.0
+program_name=`basename $0`
+program_dir=`dirname $0`
+arg_count=$#
+
+serviioservice="/mnt/cache/.apps/serviio/serviio-0.6.2/bin/serviio-wrapper.sh"
+lockfile="/var/run/serviio.pid"
+lockfilejava="/var/run/serviiojava.pid"
+
+start()
+{
+	if [ -f "${lockfile}" ]; then # if lockfile exists then
+		# The file exists so read the PID
+		# to see if it is still running
+		lock_pid=`head -n 1 "${lockfile}"` # Get the PID from the lockfile
+		if [ -z "${lock_pid}" ]; then
+			rm -f "${lockfile}"
+			pid_running=''
+		else
+			pid_running=`ps -p "${lock_pid}" | grep "${lock_pid}"` # See if the PID is still running (It may have crashed at some point)
+		fi
+
+		if [ -z "${pid_running}" ]; then # (locfile exists) and if lockfile contains a PID that is not running
+			## The process is not running
+			# Remove old lock file
+			rm "${lockfile}"
+		else # ( lockfile exists) and the lockfile contains a PID this is running
+			echo "$program_name is already running [${lock_pid}]"
+			exit 2
+		fi
+	fi
+	
+	if [ ! -f "${lockfile}" ]; then 
+		#initlog -c "echo -n Starting Serviio server: "
+		echo "Starting ${program_name} process."
+		sudo $serviioservice &
+		# wait for the process to start for 10 seconds
+		let new_pid_timer=0
+		let new_pid_timeout=10
+		while [ $new_pid_timer -lt $new_pid_timeout ]
+		do
+			new_pid=`ps -o pid -C serviio.sh --no-header`
+			#echo waiting for Serviio server to start. $new_pid_timer seconds
+			echo "waiting for Serviio server to start. ${new_pid_timer} seconds."
+			#ps -o pid -C serviio.sh --no-header
+			if [ -z "${new_pid}" ]; then
+				sleep 1
+				#new_pid=`ps -o pid -C serviio.sh --no-header`
+				let new_pid_timer=new_pid_timer+1
+			else
+				let new_pid_timeout=0
+			fi
+		done
+		### Create the lock file ###
+		ps -o pid -C serviio.sh --no-header > $lockfile
+		### Echo this it is running
+		echo Serviio server started in $new_pid_timer seconds. PID "$new_pid"
+	fi
+}
+
+# Stop the service serviio
+stop()
+{
+    #initlog -c "echo -n Stopping Serviio server: "
+    #killall $serviioservice
+    ### Now, delete the lock file ###
+    #rm -f $lockfile
+    #echo
+	
+    if [ -f "${lockfile}" ]; then # if lockfile exists then
+        # The file exists so read the PID
+        # to see if it is still running
+        lock_pid=`head -n 1 "${lockfile}"`
+
+        pid_running=`ps -p "${lock_pid}" | grep "${lock_pid}"`
+
+        if [ -z "${pid_running}" ]; then # (if locfile exists) and if lockfile contains a PID that is not running
+            echo "$program_name ${lock_pid} is not currently running "
+            rm "${lockfile}"
+            exit 0
+        else # (if lockfile exists) and the lockfile contains a PID this is running
+            echo killing $program_name process "$lock_pid"
+            echo killing $program_name process "$lock_pid" | logger -t$program_name 
+            kill "$lock_pid"
+            rm "${lockfile}"
+            
+			killjava
+	        exit 0
+        fi
+    else
+        echo "$program_name not currently running "
+        exit 0
+    fi
+}
+
+killjava()
+{
+    java_pid=`ps -o pid,cmd -C java --no-header | grep "[(?i)serviio*]" | cut -c1,2,3,4,5`
+	echo Serviio java pid=$java_pid
+	
+	if [ -z "${java_pid}" ]; then
+	    echo serviio java process not running
+	else
+        kill "$java_pid"
+
+	    let new_pid_timer=0
+	    let new_pid_timeout=10
+	    while [ $new_pid_timer -lt $new_pid_timeout ]
+	    do
+            echo waiting for Serviio java process to end. $new_pid_timer seconds
+            java_pid=`ps -o pid,cmd -C java --no-header | grep "[(?i)serviio*]" | cut -c1,2,3,4,5`
+		    if [ ! -z "${java_pid}" ]; then
+    	        sleep 1
+                #new_pid=`ps -o pid -C serviio.sh --no-header`
+		        let new_pid_timer=new_pid_timer+1
+	        else
+                let new_pid_timeout=0
+	        fi
+	    done
+  	    echo serviio java process killed
+	fi
+
+}
+
+serviio_datacheck() 
+{
+	array=( ramfs proc tempfs sysfs )
+	fs=$( stat -f -c '%T' /mnt/cache/.apps/serviio )
+	for i in "${array[@]}"
+	do
+		if [ $i = $fs ]; then
+		    echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b>Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+			break
+		elif [ $i = msdos ]; then
+			echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b>Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			break
+		else
+			echo "<p style="color:green\;margin-left:10px\;">Your data will persist after a reboot</p>"
+			break
+		fi
+	done
+}
+
+### main logic ###
+case "$1" in
+	start)
+        start
+    ;;
+	stop)
+        stop
+    ;;
+	restart|reload|condrestart)
+        stop
+        start
+    ;;
+	status)
+        jobs $serviioservice
+    ;;
+	datacheck)
+		serviio_datacheck
+	;;
+	*)
+        echo $"Usage: $0 {start|stop|restart|status|datacheck}"
+        exit 1
+esac
+exit 0
+]]>
+</INLINE>
+</FILE>
+
+<!-- event handler -->
+<FILE Name="/usr/local/emhttp/plugins/serviio/event/disks_mounted" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/bash
+if [ -z ${JAVA_HOME} ]; then # if JAVA_HOME is empty
+  export JAVA_HOME=/usr/lib/java
+fi
+
+serviio_pid=`ps -o pid -C serviio-wrapper.sh --no-header | cut -c1,2,3,4,5`
+java_pid=`ps -o pid,cmd -C java --no-header | grep "[(?i)serviio*]" | cut -c1,2,3,4,5`
+
+if [ -n $serviio_pid ]; then
+	if [ -n $java_pid ]; then
+		/mnt/cache/.apps/serviio/serviio-0.6.2/bin/serviio-wrapper.sh &
+	else
+		# abnormality has occured. Serviio.sh is not running, but it's java child is. The server should be running OK.
+	exit 1
+	fi
+else
+	if [ -n $java_pid ]; then
+		# abnormality has occured. Serviio.sh is running, but it's java child is not. Kill the existing serviio.sh and restart a new one.
+		kill $serviio_pid
+		sleep 1
+		/mnt/cache/.apps/serviio/serviio-0.6.2/bin/serviio-wrapper.sh &
+	else
+		# Serviio.sh and it's java child are already running. The server is running OK.
+		exit 0
+	fi
+fi  
+]]>
+</INLINE>
+</FILE>
+
+<!-- event handler -->
+<FILE Name="/usr/local/emhttp/plugins/serviio/event/unmounting_disks" Mode="0770">
+<INLINE>
+<![CDATA[
+#!/bin/bash
+serviio_pid=`ps -o pid -C serviio-wrapper.sh --no-header | cut -c1,2,3,4,5`
+java_pid=`ps -o pid,cmd -C java --no-header | grep "[(?i)serviio*]" | cut -c1,2,3,4,5`
+if [ -n ${serviio_pid} ]; then
+	kill ${serviio_pid}
+fi
+
+if [ -n ${java_pid} ]; then
+	kill ${java_pid}
+fi
+exit 0
+]]>
+</INLINE>
+</FILE>
+
+</PLUGIN>
