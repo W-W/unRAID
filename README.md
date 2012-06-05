@@ -1,5 +1,4 @@
 ## unRAID Plug-ins
-## Plug-ins by Influencer & WW
 
 Our plug-ins try to unlock your unRAID servers potential, adding functionality to your server as well as keeping it easy to use.
 
@@ -9,6 +8,7 @@ many in the community. Some of these have plug-ins by other authors, we've modif
 
 
 A couple features to note:
+* New friendly plugin GUI with useful informations
 * Message letting you know at a glance whether your data and configuration files will remain after a reboot
 * Indicator letting the user know how much disk space is being used by the application
 * Easy to use updater for applications that have spotty updaters or no in-app updater at all, plus update notification
@@ -17,3 +17,4 @@ A couple features to note:
 
 
 We hope you enjoy our plug-ins, if you have any issues post them either on the Lime-Technology forums or here on the issues page.
+If you want to change or add something interesting in our plugins go ahead, do it and post your commit.
