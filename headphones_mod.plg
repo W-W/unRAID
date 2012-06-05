@@ -199,6 +199,11 @@ headphones_install()
 		mkdir -p $DATADIR
     fi
 	
+	if [ -e ""$DATADIR"/version.txt" ]; then 
+		echo "removing old version"
+		rm ""$DATADIR"/version.txt"
+	fi
+	
 	cd /tmp
 	git clone https://github.com/rembo10/headphones/
 	cp -Rf /tmp/headphones/* $INSTALLDIR
@@ -336,13 +341,14 @@ if ($headphones_installed=="yes")
 		</table>
 	</form>
 	<hr>
-<p style="font-size:16px;"><b>Additional informations:</b></p>
+<div id="title"><span class="left">Status:
+<?if ($headphones_running=="yes"):?>
+  <a href="http://<?=$var['NAME'];?>:<?=$headphones_cfg['PORT'];?>" target="_blank"><span class="green"><b>RUNNING</b></span></a><span> with version: <b><?=$headphones_curversion;?></b></span>
+<?else:?>
+  <span class="red"><b>STOPPED</b></span>
+<?endif;?>
+</span></div>
 <? if ($headphones_installed=="yes"): ?>	
-	<? if ($headphones_running=="yes"): ?>
-		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$headphones_cfg['PORT'];?>" target="_blank">Headphones</a> is running with version: <b><?=$headphones_curversion;?></b></p>
-	<? else: ?>
-		<p style="margin-left:10px;"><b>Headphones is not running</b></p>
-	<? endif; ?>
 	<? if ($headphones_installdirsize!=0 && $headphones_installdirsize!=""): ?>
 		<? if ($headphones_cfg["INSTALLDIR"] == $headphones_cfg["DATADIR"]): ?>
 			<p style="margin-left:10px;">Headphones storage memory usage: install + data directory: <b><?=$headphones_installdirsize?></b></p>

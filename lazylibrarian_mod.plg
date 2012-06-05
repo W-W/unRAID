@@ -25,7 +25,7 @@ All dependencies are installed as needed and everything is controlable from the 
 <MD5>5d92bd44e67618dfdacc2e2fa9a41821</MD5>
 </FILE>
 <FILE Name="/boot/config/plugins/lazylibrarian/librarian.png">
-<URL>http://dl.dropbox.com/u/49442039/librarian.png</URL>
+<URL>http://dl.dropbox.com/u/19960175/unRAID/lazylibrarian.png</URL>
 </FILE>
 
 <!-- clean up previous install -->
@@ -195,6 +195,11 @@ lazylibrarian_install()
 	if [ ! -e "$DATADIR" ]; then 
 		mkdir -p $DATADIR
     fi
+
+	if [ -e ""$DATADIR"/version.txt" ]; then 
+		echo "removing old version"
+		rm ""$DATADIR"/version.txt"
+	fi
 	
 	cd /tmp
 #	git clone https://github.com/Mar2zz/LazyLibrarian	- when LazyLibrarian will be finished this line should be enabled
@@ -334,18 +339,19 @@ if ($lazylibrarian_installed=="yes")
 		</table>
 	</form>
 	<hr>
-<p style="font-size:16px;"><b>Additional informations:</b></p>
+<div id="title"><span class="left">Status:
+<?if ($lazylibrarian_running=="yes"):?>
+  <a href="http://<?=$var['NAME'];?>:<?=$lazylibrarian_cfg['PORT'];?>" target="_blank"><span class="green"><b>RUNNING</b></span></a><span> with version: <b><?=$lazylibrarian_curversion;?></b></span>
+<?else:?>
+  <span class="red"><b>STOPPED</b></span>
+<?endif;?>
+</span></div>
 <? if ($lazylibrarian_installed=="yes"): ?>	
-	<? if ($lazylibrarian_running=="yes"): ?>
-		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$lazylibrarian_cfg['PORT'];?>" target="_blank">LazyLibrarian</a> is running with version: <b><?=$lazylibrarian_curversion;?></b></p>
-	<? else: ?>
-		<p style="margin-left:10px;"><b>LAzyLibrarian is not running</b></p>
-	<? endif; ?>
 	<? if ($lazylibrarian_installdirsize!=0 && $lazylibrarian_installdirsize!=""): ?>
 		<? if ($lazylibrarian_cfg["INSTALLDIR"] == $lazylibrarian_cfg["DATADIR"]): ?>
 			<p style="margin-left:10px;">LazyLibrarian storage memory usage: install + data directory: <b><?=$lazylibrarian_installdirsize?></b></p>
 		<? else: ?>
-			<p style="margin-left:10px;">LazyLibrarian storage memory usage: install directory: <b><?=$helazylibrarian_installdirsize?></b>, data directory: <b><?=$lazylibrarian_datadirsize?></b></p>
+			<p style="margin-left:10px;">LazyLibrarian storage memory usage: install directory: <b><?=$lazylibrarian_installdirsize?></b>, data directory: <b><?=$lazylibrarian_datadirsize?></b></p>
 		<? endif; ?>
 	<? endif; ?>
 	<?=$lazylibrarian_datacheck?>

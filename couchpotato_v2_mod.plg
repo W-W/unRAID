@@ -201,6 +201,7 @@ couchpotato_disable()
 couchpotato_install()
 {
 	echo "installing latest Version of couchpotato v2"
+	
 	if [ ! -e "$INSTALLDIR" ]; then 
 		mkdir -p $INSTALLDIR
 	fi
@@ -208,13 +209,15 @@ couchpotato_install()
 	DATADIR="`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`"
 	if [ ! -e "$DATADIR" ]; then 
 		mkdir -p $DATADIR
-	 	chown nobody:users $DATADIR
+		chown $RUNAS:root $DATADIR
 		chmod 766 $DATADIR
 	fi
+	
 	if [ -e ""$DATADIR"/cache/version" ]; then 
-	echo "removing old version"
-	rm ""$DATADIR"/cache/version"
+		echo "removing old version"
+		rm ""$DATADIR"/cache/version"
 	fi
+
 	cd /tmp
 	git clone https://github.com/RuudBurger/CouchPotatoServer.git
 	cp -Rf /tmp/CouchPotatoServer/* $INSTALLDIR
@@ -360,13 +363,14 @@ if (file_exists($couchpotato_configfile))
 		</table>
 	</form>
     <hr>
-<p style="font-size:16px;"><b>Additional informations:</b></p>	
+<div id="title"><span class="left">Status:
+<?if ($couchpotato_running=="yes"):?>
+  <a href="http://<?=$var['NAME'];?>:<?=$couch_port;?>" target="_blank"><span class="green"><b>RUNNING</b></span></a><span> with version: <b><?=$couchpotato_curversion;?></b></span>
+<?else:?>
+  <span class="red"><b>STOPPED</b></span>
+<?endif;?>
+</span></div>
 <? if ($couchpotato_installed=="yes"): ?>
-	<? if ($couchpotato_running=="yes"): ?>
-		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$couch_port;?>" target="_blank">CouchPotato v2</a> is running with version: <b><?=$couchpotato_curversion;?></b></p>
-	<? else: ?>
-		<p style="margin-left:10px;"><b>CouchPotato v2 is not running</b></p>
-	<? endif; ?>
 	<? if ($couchpotato_installdirsize!=0 && $couchpotato_installdirsize!=""): ?>
 		<? if ($couchpotato_cfg["INSTALLDIR"] == $couchpotato_datadir): ?>
 			<p style="margin-left:10px;">CouchPotato v2 storage memory usage: install + data directory: <b><?=$couchpotato_installdirsize?></b></p>

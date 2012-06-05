@@ -231,7 +231,7 @@ sabnzbd_install()
 		chown -R $RUNAS:users "$INSTALLDIR"		
 		rm -R /tmp/SABnzbd-${stable} /tmp/SABnzbd-${stable}-src.tar.gz
 	elif [[ $INSTALLBETA = "yes" && $INSTALLBETA != "" ]]; then
-		beta=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/eta/{gsub(/\015/,"");print}'))
+		beta=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/RC/{gsub(/\015/,"");print}'))
 		echo "installing latest Beta Version ($beta)";
 	
 		cd /tmp 
@@ -254,7 +254,7 @@ sabnzbd_check_update()
 		fi
 	elif [ $INSTALLBETA = "yes" ]; then
 		sabnzbd_version
-		beta=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/eta/{gsub(/\015/,"");print}'))
+		beta=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/RC/{gsub(/\015/,"");print}'))
 #		echo "current version: $currentversion,"
 #		echo "newest beta version: $beta"
 		if [[ $currentversion != "" && $currentversion != $beta ]]; then
@@ -373,7 +373,7 @@ if ($sabnzbd_installed=="yes")
 	$sabnzbd_update  = shell_exec( "/etc/rc.d/rc.sabnzbd check_update" );
 	$sabnzbd_curversion  = shell_exec( "/etc/rc.d/rc.sabnzbd version" );
 	$sabnzbd_stableversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,\"\");print}' | sed -n 1p" );
-	$sabnzbd_betaversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/eta/{gsub(/\015/,\"\");print}' | sed -n 1p" );
+	$sabnzbd_betaversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/RC/{gsub(/\015/,\"\");print}' | sed -n 1p" );
 	$sabnzbd_installdirsize = trim(shell_exec( "if [ -e $sabnzbd_cfg[INSTALLDIR] ]; then du -sh $sabnzbd_cfg[INSTALLDIR] | cut -f1; else echo 0; fi"));
 	$sabnzbd_datadirsize = trim(shell_exec( "if [ -e $sabnzbd_cfg[DATADIR] ]; then du -sh $sabnzbd_cfg[DATADIR] | cut -f1; else echo 0; fi" ));
 }
@@ -429,13 +429,14 @@ if ($sabnzbd_installed=="yes")
 		</table>
 	</form>
 	<hr>
-<p style="font-size:16px;"><b>Additional informations:</b></p>
+<div id="title"><span class="left">Status:
+<?if ($sabnzbd_running=="yes"):?>
+  <a href="http://<?=$var['NAME'];?>:<?=$sabnzbd_cfg['PORT'];?>" target="_blank"><span class="green"><b>RUNNING</b></span></a><span> with version: <b><?=$sabnzbd_curversion?></b></span>
+<?else:?>
+  <span class="red"><b>STOPPED</b></span>
+<?endif;?>
+</span></div>
 <? if ($sabnzbd_installed=="yes"): ?>
-	<? if ($sabnzbd_running=="yes"): ?>
-		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$sabnzbd_cfg['PORT'];?>" target="_blank">SABnzbd</a> is running with version: <b><?=$sabnzbd_curversion?></b></p>
-	<? else: ?>
-		<p style="margin-left:10px;"><b>SABnzbd is not running</b></p>
-	<? endif; ?>
 	<? if ($sabnzbd_installdirsize!=0 && $sabnzbd_installdirsize!=""): ?>
 		<? if ($sabnzbd_cfg["INSTALLDIR"] == $sabnzbd_cfg["DATADIR"]): ?>
 			<p style="margin-left:10px;">SABnzbd storage memory usage: install + data directory: <b><?=$sabnzbd_installdirsize?></b></p>
