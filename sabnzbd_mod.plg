@@ -391,7 +391,7 @@ if ($sabnzbd_installed=="yes")
 				</td>
 			</tr>
 			<tr>
-				<td>Install Beta:</td>
+				<td>Install Beta/RC versions:</td>
 				<td>
 					<select name="arg6" size="1">
 						<?=mk_option($sabnzbd_cfg['INSTALLBETA'], "no", "No");?>
