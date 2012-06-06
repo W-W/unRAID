@@ -67,7 +67,7 @@ darkstat_start() {
     return
   fi
   
-  CMDLINE="darkstat -i $INTERFACE -p $PORT --chroot /var/run/darkstat --pidfile darkstat.pid"
+  CMDLINE="darkstat -i $INTERFACE -p $PORT --no-promisc --chroot /var/run/darkstat --pidfile darkstat.pid"
   echo -n "Starting darkstat:  $CMDLINE"
   $CMDLINE
   echo
