@@ -200,6 +200,9 @@ couchpotato_disable()
 
 couchpotato_install()
 {
+	#test if array is mounted before install
+	while ! test -d /mnt/disk1; do sleep 5; continue; done
+
 	echo "installing latest Version of couchpotato v2"
 	if [ ! -e "$INSTALLDIR" ]; then 
 		mkdir -p $INSTALLDIR
