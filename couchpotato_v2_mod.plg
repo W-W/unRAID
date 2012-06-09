@@ -209,7 +209,7 @@ couchpotato_install()
 	DATADIR="`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`"
 	if [ ! -e "$DATADIR" ]; then 
 		mkdir -p $DATADIR
-		chown $RUNAS:root $DATADIR
+		chown $RUNAS:users $DATADIR
 		chmod 766 $DATADIR
 	fi
 	
@@ -244,6 +244,7 @@ couchpotato_datacheck()
 		fi
 	done
 }
+
 # read our configuration
 source /boot/config/plugins/couchpotato_v2/couchpotato_v2.cfg
 
