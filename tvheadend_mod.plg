@@ -304,7 +304,7 @@ $tvheadend_cfg = parse_ini_file( "/boot/config/plugins/tvheadend/tvheadend.cfg" 
 $tvheadend_installed = file_exists( "/usr/bin/tvheadend" ) ? "yes" : "no";
 $tvheadend_kernel = trim(shell_exec( "uname -r" ));
 $tvheadend_mtree = file_exists( "/lib/modules/$tvheadend_kernel/kernel/drivers/media" ) ? "yes" : "no";
-$tvheadend_dvb = file_exists( "/dev/dvb/adapter0") ? "yes" : "no";
+$tvheadend_dvb = file_exists( "/dev/dvb/adapter0/frontend0") ? "yes" : "no";
 if ($tvheadend_installed=="yes")
 {
 	$tvheadend_datacheck = shell_exec ( "/etc/rc.d/rc.tvheadend datacheck" );
