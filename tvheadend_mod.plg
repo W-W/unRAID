@@ -2,8 +2,10 @@
 <PLUGIN>
 
 <!--
-2012-06-04-ww 		    - first release
-2012-06-11-ww			- tons of improvements + cool web layout
+2012-06-04-ww		- first release
+2012-06-11-ww		- tons of improvements + cool web layout
+2012-06-12-ww		- added START/STOP button + sime improvements in start/stop functions
+
 This Plugin installs and controls Tvheadend for UnRaid.
 -->
 
@@ -19,8 +21,8 @@ This Plugin installs and controls Tvheadend for UnRaid.
 <FILE Name="/tmp/tvheadend-cleanup" Run="/bin/bash">
 <INLINE>
 <![CDATA[
-rm -f /etc/rc.d/rc.tvheadend
-rm -f -R /usr/local/emhttp/plugins/tvheadend
+[ -f /etc/rc.d/rc.tvheadend ] && rm -f /etc/rc.d/rc.tvheadend
+[ -d /usr/local/emhttp/plugins/tvheadend ] && rm -f -R /usr/local/emhttp/plugins/tvheadend
 rm /tmp/tvheadend-cleanup
 ]]>
 </INLINE>
@@ -42,7 +44,7 @@ GROUP="video"
 <INLINE>
 <![CDATA[
 #!/bin/sh
-# Start/stop/restart/enable/disable tvheadend.
+# start|stop|restart|enable|disable|install|dvb|datacheck tvheadend.
 
 tvheadend_start()
 {
@@ -62,14 +64,15 @@ tvheadend_start()
 	fi
   
 	CMDLINE="/usr/bin/tvheadend -c $DATADIR -u $RUNAS -g $GROUP -f"
-	echo -n "Starting tvheadend:  $CMDLINE"
+	echo "Starting Tvheadend: $CMDLINE"
 	$CMDLINE
-	echo
-  
+
 	while [ ! -e /var/run/tvheadend.pid ]; do
 		sleep 1
 	done
-	echo -n "please refresh the page"
+	echo "... OK"
+	sleep 1
+	echo "Please refresh the page"
 }
 
 tvheadend_stop()
@@ -79,16 +82,17 @@ tvheadend_stop()
 		return
 	fi
 	
-	echo -n "Stopping tvheadend..."
-	sleep 0.5
-	echo
-	kill $(cat /var/run/tvheadend.pid)
-	echo
+	echo "Stopping Tvheadend... "
+	sleep 1
+	kill $(cat /var/run/tvheadend.pid )
+	sleep 3
 	
-	while [ -e /var/run/tvheadend.pid ]; do
-		sleep 1
-	done
-	echo
+	if [ -e /var/run/tvheadend.pid ]; then
+		kill -9 $(cat /var/run/tvheadend.pid )
+		rm /var/run/tvheadend.pid
+	fi
+	echo "... OK"
+	sleep 1
 }
 
 tvheadend_restart()
@@ -155,7 +159,7 @@ tvheadend_disable()
 
 tvheadend_install()
 {
-	echo "installing latest Version of tvheadend"
+	echo "Installing latest version of Tvheadend..."
 	
 	installpkg /boot/config/plugins/tvheadend/tvheadend_W-W.txz
 
@@ -168,11 +172,13 @@ tvheadend_install()
 	fi
 	
 	chown -R $RUNAS:users "/usr/bin/tvheadend"
+	echo "... OK"
+	sleep 1
 }
 
 tvheadend_dvb_install()
 {
-	echo "installing bzroot and bzimage files with MEDIA tree for tvheadend... please be patient..."
+	echo "Installing bzroot and bzimage files with MEDIA tree and tuner card drivers for Tvheadend... please be patient..."
 
 	cd /tmp
 	[ -f bzimage_new ] && rm -f bzimage_new
@@ -217,12 +223,12 @@ tvheadend_dvb_install()
 			mv bzroot /boot/
 		fi
 		touch tvheadend_dvb_ctrl
-		echo "... ALL DONE... please reboot your machine"
+		echo "... ALL DONE. Please reboot your machine"
 	else
-		echo "... error... something went wrong..."
+		echo "... ERROR. Something went wrong..."
 	fi
 	
-	sleep 5
+	sleep 3
 }
 
 tvheadend_datacheck() 
@@ -232,10 +238,10 @@ tvheadend_datacheck()
 	for i in "${array[@]}"
 	do
 		if [ $i = $fs ]; then
-		    echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b>Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+		    echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
 			break
 		elif [ $i = msdos ]; then
-			echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b>Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
 			break
 		else
 			echo "<p style="color:green\;margin-left:10px\;">Your data will persist after a reboot</p>"
@@ -273,7 +279,7 @@ case "$1" in
 		tvheadend_datacheck
 	;;
 	*)
-		echo "usage $0 start|stop|restart|enable|disable|install|datacheck"
+		echo "usage $0 start|stop|restart|enable|disable|install|dvb|datacheck"
 esac
 ]]>
 </INLINE>
@@ -344,7 +350,7 @@ if ($tvheadend_installed=="yes")
 						<?=mk_option($tvheadend_cfg['RUNAS'], "root", "root");?>
 						<option value='other'<?=($tvheadend_cfg['RUNAS'] != "root" && $tvheadend_cfg['RUNAS'] != "nobody")?" selected=yes":"" ;?>>other</option>
 					</select>
-					<input type="text" name="arg2" maxlength="40" value="<?=$tvheadend_cfg['RUNAS'];?>">
+					<input type="hidden" name="arg2" maxlength="40" value="<?=$tvheadend_cfg['RUNAS'];?>">
 				</td>
 			</tr>
 			<tr>
@@ -373,25 +379,32 @@ if ($tvheadend_installed=="yes")
 			</div>
 		<?endif;?>	
 	</form>
-<?if ($tvheadend_installed=="no"):?>
-	<form name="tvheadend_settings" method="POST" action="/update.htm" target="progressFrame">
-		<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend install">
-			<input type="submit" name="runCmd" value="INSTALL" style="width:52%;height:28px;font-size:12px;margin-left:10px">
-	</form>
-<?endif;?>	
 <br />
-<div id="title"><span class="left">Status:
-<?if ($tvheadend_installed=="yes"):?>	
-	<?if ($tvheadend_running=="yes"):?>
-		<a href="http://<?=$var['NAME'];?>:9981" target="_blank"><span class="green"><b>RUNNING... GO... GO... GO...</b></span></a>
+<form name="tvheadend_settings" method="POST" action="/update.htm" target="progressFrame">
+	<div id="title"><span class="left">Status:
+	<?if ($tvheadend_installed=="yes"):?>	
+		<?if ($tvheadend_running=="yes"):?>
+			<a href="http://<?=$var['NAME'];?>:9981" target="_blank"><span class="green"><b>RUNNING</b></span></a>
+			<span>
+				<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend stop">
+				<input type="submit" name="runCmd" value="STOP" style="padding-bottom:8px;margin-left:2px">
+			</span>
+		<?else:?>
+			<span class="red"><b>STOPPED</b></span>
+			<span>
+				<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend start">
+				<input type="submit" name="runCmd" value="START" style="padding-bottom:8px;margin-left:2px">
+			</span>
+		<?endif;?>
 	<?else:?>
-		<span class="red"><b>STOPPED</b></span>
-	<?endif;?>
-<?else:?>
-	<span class="red"><b>NOT INSTALLED</b></span>
-<?endif;?>	
-</span></div>	
-
+		<span class="red"><b>NOT INSTALLED</b></span>
+		<span>
+			<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend install">
+			<input type="submit" name="runCmd" value="INSTALL" style="padding-bottom:8px;margin-left:2px">
+		</span>
+	<?endif;?>	
+	</span></div>	
+</form>
 <? if ($tvheadend_installed=="yes"): ?>	
 	<? if ($tvheadend_installdirsize!=0 && $tvheadend_installdirsize!=""): ?>
 		<? if ($tvheadend_cfg["INSTALLDIR"] == $tvheadend_cfg["DATADIR"]): ?>
