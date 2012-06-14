@@ -17,3 +17,5 @@ A couple features to note:
 
 
 We hope you enjoy our plug-ins, if you have any issues post them either on the Lime-Technology forums or here on the issues page.
+
+[https://github.com/W-W/unRAID/raw/master/couchpotato_v2_mod.plg](Couchpotato_v2_mod.plg)
