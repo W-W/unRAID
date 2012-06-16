@@ -62,7 +62,7 @@ Also this plugin enables easy updates for SABnzbd, since the app doesn't have it
 <MD5>c5a5550888ae009531f133a33ed85be7</MD5>
 </FILE>
 <FILE Name="/boot/config/plugins/sabnzbd/sabnzbd.png">
-<URL>http://unraid.benjaminwaller.de/sabnzbd/sabnzbd.png</URL>
+<URL>--no-check-certificate https://github.com/downloads/W-W/unRAID/sabnzbd.png</URL>
 </FILE>
 
 <!-- clean up previous install -->
@@ -178,17 +178,17 @@ sabnzbd_enable()
 		INSTALLDIR="$3"
 		DATADIR="$4"
 		INSTALLBETA="$5"
-	
+
 		if [ $DATADIR == "" ]; then
 			$DATADIR=$INSTALLDIR
 		fi
-	
+
 		if [ $RUNAS != $1 ]; then
 			chown -R $1:users "$INSTALLDIR"
 		fi
-	
+
 		RUNAS="$1"
-	
+
 		# create sabnzbd user if necessary
 		if [[ $RUNAS != "nobody" && $RUNAS != "root" ]]; then
 			if ( ! grep -q ^$RUNAS /etc/passwd ); then
@@ -218,28 +218,40 @@ sabnzbd_install()
 	if [ ! -e "$DATADIR" ]; then 
 		mkdir -p "$DATADIR"
 	fi
-	
+
 	echo $INSTALLBETA
 	if [[ $INSTALLBETA = "" || $INSTALLBETA = "no" ]]; then
 		stable=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,"");print}'))
 		echo "installing latest Version ($stable)"
-	
+
 		cd /tmp
-		wget -q http://downloads.sourceforge.net/project/sabnzbdplus/sabnzbdplus/sabnzbd-${stable}/SABnzbd-${stable}-src.tar.gz
+		wget -q http://downloads.sourceforge.net/project/sabnzbdplus/sabnzbdplus/${stable}/SABnzbd-${stable}-src.tar.gz
 		tar -xf /tmp/SABnzbd-${stable}-src.tar.gz
 		cp -R /tmp/SABnzbd-${stable}/* $INSTALLDIR
 		chown -R $RUNAS:users "$INSTALLDIR"		
 		rm -R /tmp/SABnzbd-${stable} /tmp/SABnzbd-${stable}-src.tar.gz
 	elif [[ $INSTALLBETA = "yes" && $INSTALLBETA != "" ]]; then
-		beta=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/eta/{gsub(/\015/,"");print}'))
+		beta=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/RC/{gsub(/\015/,"");print}'))
 		echo "installing latest Beta Version ($beta)";
-	
+
+		if [[ $beta != "" ]]; then
 		cd /tmp 
 		wget http://downloads.sourceforge.net/project/sabnzbdplus/sabnzbdplus-beta/${beta}/SABnzbd-${beta}-src.tar.gz
 		tar -xf /tmp/SABnzbd-${beta}-src.tar.gz
 		cp -R /tmp/SABnzbd-${beta}/* $INSTALLDIR
 		chown -R $RUNAS:users "$INSTALLDIR"		
 		rm -R /tmp/SABnzbd-${beta} /tmp/SABnzbd-${beta}-src.tar.gz;
+
+		else 
+		echo "Currently no beta, downloading stable release"
+		stable=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,"");print}'))
+		cd /tmp
+		wget -q http://downloads.sourceforge.net/project/sabnzbdplus/sabnzbdplus/${stable}/SABnzbd-${stable}-src.tar.gz
+		tar -xf /tmp/SABnzbd-${stable}-src.tar.gz
+		cp -R /tmp/SABnzbd-${stable}/* $INSTALLDIR
+		chown -R $RUNAS:users "$INSTALLDIR"		
+		rm -R /tmp/SABnzbd-${stable} /tmp/SABnzbd-${stable}-src.tar.gz
+		fi
 	fi
 }
 
@@ -248,18 +260,21 @@ sabnzbd_check_update()
 	if [[ $INSTALLBETA = "no" || $INSTALLBETA = "" ]]; then
 		sabnzbd_version
 		stable=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,"");print}'))
-	
+
 		if [[ $currentversion != "" && $currentversion != $stable ]]; then
 			echo "Stable update available to version: $stable"
 		fi
 	elif [ $INSTALLBETA = "yes" ]; then
 		sabnzbd_version
-		beta=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/eta/{gsub(/\015/,"");print}'))
-#		echo "current version: $currentversion,"
-#		echo "newest beta version: $beta"
-		if [[ $currentversion != "" && $currentversion != $beta ]]; then
-			echo "Beta update available to version: $beta" 
-		fi
+		beta=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/RC/{gsub(/\015/,"");print}'))
+			if [ $beta = "" ]; then
+				stable=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,"");print}'))
+				echo "Currently no beta available, latest stable is $stable"
+			else
+				if [[ $currentversion != "" && $currentversion != $beta ]]; then
+				echo "Beta update available to version: $beta" 
+				fi
+			fi
 	fi 
 }
 
@@ -373,7 +388,7 @@ if ($sabnzbd_installed=="yes")
 	$sabnzbd_update  = shell_exec( "/etc/rc.d/rc.sabnzbd check_update" );
 	$sabnzbd_curversion  = shell_exec( "/etc/rc.d/rc.sabnzbd version" );
 	$sabnzbd_stableversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,\"\");print}' | sed -n 1p" );
-	$sabnzbd_betaversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/eta/{gsub(/\015/,\"\");print}' | sed -n 1p" );
+	$sabnzbd_betaversion = shell_exec( "wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/RC/{gsub(/\015/,\"\");print}' | sed -n 1p" );
 	$sabnzbd_installdirsize = trim(shell_exec( "if [ -e $sabnzbd_cfg[INSTALLDIR] ]; then du -sh $sabnzbd_cfg[INSTALLDIR] | cut -f1; else echo 0; fi"));
 	$sabnzbd_datadirsize = trim(shell_exec( "if [ -e $sabnzbd_cfg[DATADIR] ]; then du -sh $sabnzbd_cfg[DATADIR] | cut -f1; else echo 0; fi" ));
 }
@@ -391,7 +406,7 @@ if ($sabnzbd_installed=="yes")
 				</td>
 			</tr>
 			<tr>
-				<td>Install Beta:</td>
+				<td>Install Beta/RC versions:</td>
 				<td>
 					<select name="arg6" size="1">
 						<?=mk_option($sabnzbd_cfg['INSTALLBETA'], "no", "No");?>
@@ -429,13 +444,14 @@ if ($sabnzbd_installed=="yes")
 		</table>
 	</form>
 	<hr>
-<p style="font-size:16px;"><b>Additional informations:</b></p>
+<div id="title"><span class="left">Status:
+<?if ($sabnzbd_running=="yes"):?>
+  <a href="http://<?=$var['NAME'];?>:<?=$sabnzbd_cfg['PORT'];?>" target="_blank"><span class="green"><b>RUNNING</b></span></a><span> with version: <b><?=$sabnzbd_curversion?></b></span>
+<?else:?>
+  <span class="red"><b>STOPPED</b></span>
+<?endif;?>
+</span></div>
 <? if ($sabnzbd_installed=="yes"): ?>
-	<? if ($sabnzbd_running=="yes"): ?>
-		<p style="margin-left:10px;"><a href="http://<?=$var['NAME'];?>:<?=$sabnzbd_cfg['PORT'];?>" target="_blank">SABnzbd</a> is running with version: <b><?=$sabnzbd_curversion?></b></p>
-	<? else: ?>
-		<p style="margin-left:10px;"><b>SABnzbd is not running</b></p>
-	<? endif; ?>
 	<? if ($sabnzbd_installdirsize!=0 && $sabnzbd_installdirsize!=""): ?>
 		<? if ($sabnzbd_cfg["INSTALLDIR"] == $sabnzbd_cfg["DATADIR"]): ?>
 			<p style="margin-left:10px;">SABnzbd storage memory usage: install + data directory: <b><?=$sabnzbd_installdirsize?></b></p>
@@ -445,20 +461,29 @@ if ($sabnzbd_installed=="yes")
 	<? endif; ?>
 	<?=$sabnzbd_datacheck?>
 	<? if ($sabnzbd_update != ""): ?>
+		<? if ($sabnzbd_cfg['INSTALLBETA'] == yes && $sabnzbd_betaversion != ""): ?>
+			<? if ($sabnzbd_betaversion != $sabnzbd_curversion): ?>
 		<form name="sabnzbd_settings" method="POST" action="/update.htm" target="progressFrame">
 			<input type="hidden" name="cmd" value="/etc/rc.d/rc.sabnzbd update">
-			<? if ($sabnzbd_cfg['INSTALLBETA'] == no): ?>
-				<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <b><?=$sabnzbd_stableversion?></b></p>
-			<? endif; ?>
-			<? if ($sabnzbd_cfg['INSTALLBETA'] == yes): ?>
 				<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <b><?=$sabnzbd_betaversion?></b></p>
-			<? endif; ?>
 			<table style="align:center;">
 				<tr>
 					<td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>
 				</tr>
 			</table>
 		</form>
+			<? endif; ?>
+		<? else: ?>
+		<form name="sabnzbd_settings" method="POST" action="/update.htm" target="progressFrame">
+			<input type="hidden" name="cmd" value="/etc/rc.d/rc.sabnzbd update">
+				<p style="font-size:14px;color:blue;margin-left:10px;">Update available to version: <b><?=$sabnzbd_stableversion?></b></p>
+			<table style="align:center;">
+				<tr>
+					<td><input type="submit" name="runCmd" value="Update"><button type="button" onClick="done();">Done</button></td>
+				</tr>
+			</table>
+		</form>
+		<? endif; ?>
 	<? endif; ?>
 <? else: ?>
 	<p style="margin-left:10px;"><b>SABnzbd is not installed</b></p>
