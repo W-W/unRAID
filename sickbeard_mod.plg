@@ -94,7 +94,7 @@ sickbeard_start()
 	fi
   
 	# no-op if already running
-	if [ -r /var/run/sickbeard/sickbeard.pid ]; then
+	if [ -r /var/run/sickbeard.pid ]; then
 		return
 	fi
   
