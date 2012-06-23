@@ -5,24 +5,29 @@
 2012-06-04-ww		- first release
 2012-06-11-ww		- tons of improvements + cool web layout
 2012-06-12-ww		- added START/STOP button + sime improvements in start/stop functions
+2012-06-19-ww		- added XMLTV feature + HDHomeRun tuners support + new version of Tvheadend
 
 This Plugin installs and controls Tvheadend for UnRaid.
 -->
 
-<FILE Name="/boot/config/plugins/tvheadend/tvheadend_W-W.txz">
-<URL>http://dl.dropbox.com/u/19960175/unRAID/tvheadend_W-W.txz</URL>
-<MD5>29110eb4a25092624dd67a732a7d6d10</MD5>
+<FILE Name="/boot/config/plugins/tvheadend/tv_grab_file">
+<URL>http://dl.dropbox.com/u/19960175/unRAID/tv_grab_file</URL>
+<MD5>0255eec0a235ebb791d11a0736b14144</MD5>
+</FILE>
+<FILE Name="/boot/config/plugins/tvheadend/tvheadend_W-W.txz" Run="upgradepkg --install-new">
+<URL>http://dl.dropbox.com/u/19960175/unRAID/tvheadend-3913532-i486-1_W-W.txz</URL>
+<MD5>37710545a044692972817a6dc43cd84e</MD5>
 </FILE>
 <FILE Name="/boot/config/plugins/tvheadend/tvheadend.png">
-<URL>http://dl.dropbox.com/u/19960175/unRAID/tvheadend.png</URL>
+<URL>--no-check-certificate https://github.com/downloads/W-W/unRAID/tvheadend.png</URL>
 </FILE>
 
 <!-- clean up previous install -->
 <FILE Name="/tmp/tvheadend-cleanup" Run="/bin/bash">
 <INLINE>
 <![CDATA[
-[ -f /etc/rc.d/rc.tvheadend ] && rm -f /etc/rc.d/rc.tvheadend
 [ -d /usr/local/emhttp/plugins/tvheadend ] && rm -f -R /usr/local/emhttp/plugins/tvheadend
+[ -f /etc/rc.d/rc.tvheadend ] && rm -f /etc/rc.d/rc.tvheadend
 rm /tmp/tvheadend-cleanup
 ]]>
 </INLINE>
@@ -31,11 +36,13 @@ rm /tmp/tvheadend-cleanup
 <FILE Name="/boot/config/plugins/tvheadend/tvheadend.cfg">
 <INLINE>
 <![CDATA[
-# tvheadend configuration
+# Tvheadend configuration:
 SERVICE="disable"
 DATADIR="/usr/local/tvheadend/.htsconfig"
 RUNAS="root"
 GROUP="video"
+PLG_STORAGESIZE="yes"
+PLG_DATACHECK="yes"
 ]]>
 </INLINE>
 </FILE>
@@ -44,7 +51,7 @@ GROUP="video"
 <INLINE>
 <![CDATA[
 #!/bin/sh
-# start|stop|restart|enable|disable|install|dvb|datacheck tvheadend.
+# start|stop|restart|enable|disable|install|dvb|storagesize|datacheck Tvheadend
 
 tvheadend_start()
 {
@@ -57,14 +64,21 @@ tvheadend_start()
 	if [ -r /var/run/tvheadend.pid ]; then
 		return
 	fi
-  
-	# if directory doesn't exist or tvheadend is not found, install it
+
+	# if directory doesn't exist or Tvheadend is not found, install it
 	if [ ! -e "/usr/bin/tvheadend" ]; then
 		tvheadend_install
+	fi  
+
+	# if tv_grab_file file doesn't exist create symbolic link to it
+	if [ ! -e "/usr/bin/tv_grab_file" ]; then
+		ln -s /boot/config/plugins/tvheadend/tv_grab_file /usr/bin/tv_grab_file
+		chown -R $RUNAS:$GROUP /usr/bin/tv_grab_file
 	fi
-  
-	CMDLINE="/usr/bin/tvheadend -c $DATADIR -u $RUNAS -g $GROUP -f"
+	
+	CMDLINE="sudo -u $RUNAS /usr/bin/tvheadend -c $DATADIR -u $RUNAS -g $GROUP -f  > /dev/null 2>&1"
 	echo "Starting Tvheadend: $CMDLINE"
+	sleep 1
 	$CMDLINE
 
 	while [ ! -e /var/run/tvheadend.pid ]; do
@@ -72,7 +86,6 @@ tvheadend_start()
 	done
 	echo "... OK"
 	sleep 1
-	echo "Please refresh the page"
 }
 
 tvheadend_stop()
@@ -102,15 +115,18 @@ tvheadend_restart()
 	tvheadend_start
 }
 
-
 write_config()
 {
-	echo "# tvheadend configuration" > /boot/config/plugins/tvheadend/tvheadend.cfg
+	echo "# Tvheadend configuration:" > /boot/config/plugins/tvheadend/tvheadend.cfg
 	echo "SERVICE=\"$SERVICE\"" >> /boot/config/plugins/tvheadend/tvheadend.cfg
 	echo "DATADIR=\"$DATADIR\"" >> /boot/config/plugins/tvheadend/tvheadend.cfg
 	echo "RUNAS=\"$RUNAS\"" >> /boot/config/plugins/tvheadend/tvheadend.cfg
 	echo "GROUP=\"$GROUP\"" >> /boot/config/plugins/tvheadend/tvheadend.cfg
+	echo "PLG_STORAGESIZE=\"$PLG_STORAGESIZE\"" >> /boot/config/plugins/tvheadend/tvheadend.cfg
+	echo "PLG_DATACHECK=\"$PLG_DATACHECK\"" >> /boot/config/plugins/tvheadend/tvheadend.cfg
 	if [ -d $DATADIR ]; then echo "{ \"username\": \"$LOGIN\", \"password\": \"$PASSWORD\" }" > $DATADIR/superuser; fi
+	sed -i 's!^wget -qO - '"`cat /boot/config/plugins/tvheadend/tv_grab_file | grep 'wget -qO - ' | cut -d' ' -f4`"'!wget -qO - '"$XMLTV"'!' /boot/config/plugins/tvheadend/tv_grab_file
+    chown -R $RUNAS:$GROUP $DATADIR/superuser
 }
 
 tvheadend_change_settings()
@@ -121,16 +137,24 @@ tvheadend_change_settings()
 		$DATADIR="/usr/local/tvheadend/.htsconfig"
 	fi
 	
+	if [ $RUNAS != $1 ] || [ $GROUP != $2 ]; then
+		chown -R $1:$2 "$DATADIR"
+	fi
+	
 	RUNAS="$1"
 	GROUP="$2"
 	
 	LOGIN="$4"
 	PASSWORD="$5"
 	
+	XMLTV="$6"
+	PLG_STORAGESIZE="$7"
+	PLG_DATACHECK="$8"
+	
 	# create tvheadend user if necessary
 	if [[ $RUNAS != "nobody" && $RUNAS != "root" ]]; then
 		if ( ! grep -q ^$RUNAS /etc/passwd ); then
-			useradd -r -g users -d / -s /bin/false $RUNAS &> /dev/null
+			useradd -r -g $GROUP -d / -s /bin/false $RUNAS &> /dev/null
 			cp /etc/passwd /etc/shadow /boot/config
 		fi
 	fi
@@ -141,7 +165,7 @@ tvheadend_enable()
 	# if not already enabled, enable it
 	if [ "$SERVICE" != "enable" ]; then
 		SERVICE=enable
-		tvheadend_change_settings $1 $2 $3 $4 $5
+		tvheadend_change_settings $1 $2 $3 $4 $5 $6 $7 $8
 		write_config
 	fi
 
@@ -153,7 +177,7 @@ tvheadend_disable()
 {
 	tvheadend_stop
 	SERVICE=disable
-	tvheadend_change_settings $1 $2 $3 $4 $5
+	tvheadend_change_settings $1 $2 $3 $4 $5 $6 $7 $8
 	write_config
 }
 
@@ -171,7 +195,14 @@ tvheadend_install()
 		echo "{ \"username\": \"admin\", \"password\": \"admin\" }" > $DATADIR/superuser
 	fi
 	
-	chown -R $RUNAS:users "/usr/bin/tvheadend"
+	# if tv_grab_file file doesn't exist create symbolic link to it
+	if [ ! -e "/usr/bin/tv_grab_file" ]; then
+		ln -s /boot/config/plugins/tvheadend/tv_grab_file /usr/bin/tv_grab_file
+		chown -R $RUNAS:$GROUP /usr/bin/tv_grab_file
+	fi
+	chown -R $RUNAS:$GROUP "$DATADIR"
+
+	sleep 3
 	echo "... OK"
 	sleep 1
 }
@@ -183,19 +214,26 @@ tvheadend_dvb_install()
 	cd /tmp
 	[ -f bzimage_new ] && rm -f bzimage_new
 	[ -f bzroot_new_dvbsky ] && rm -f bzroot_new_dvbsky
+	[ -f bzroot_new_dvbhdhomerun ] && rm -f bzroot_new_dvbhdhomerun
 	[ -f bzroot_new_tbs ] && rm -f bzroot_new_tbs
 	
-		echo $1 > ter.txt
 	wget -q http://dl.dropbox.com/u/19960175/unRAID/bzimage_new
 	if [ `md5sum bzimage_new | awk '{print $1}'` == "ec887c25ed24d4fd799e194e240bc29e" ]; then
 		MD5_IMAGE="OK"
 	else
 		MD5_IMAGE="ERROR"
 	fi
-
+	echo $1 >> ter.txt
 	if [ "$1" == "dvbsky" ]; then 
 		wget -q http://dl.dropbox.com/u/19960175/unRAID/bzroot_new_dvbsky
 		if [ `md5sum bzroot_new_dvbsky | awk '{print $1}'` == "ab71650a4bef076158ae617866947a48" ]; then
+			MD5_ROOT="OK"
+		else
+			MD5_ROOT="ERROR"
+		fi
+	elif [ "$1" == "dvbhdhomerun" ]; then 
+		wget -q http://dl.dropbox.com/u/19960175/unRAID/bzroot_new_dvbhdhomerun
+		if [ `md5sum bzroot_new_dvbhdhomerun | awk '{print $1}'` == "99f84bc67708fc1241b96de7156e0d1e" ]; then
 			MD5_ROOT="OK"
 		else
 			MD5_ROOT="ERROR"
@@ -218,17 +256,52 @@ tvheadend_dvb_install()
 		if [ "$1" == "dvbsky" ]; then 
 			mv bzroot_new_dvbsky bzroot
 			mv bzroot /boot/
+		elif [ "$1" == "dvbhdhomerun" ]; then
+			mv bzroot_new_dvbhdhomerun bzroot
+			mv bzroot /boot/
 		elif [ "$1" == "tbs" ]; then
 			mv bzroot_new_tbs bzroot
 			mv bzroot /boot/
 		fi
 		touch tvheadend_dvb_ctrl
+		sed -i '/^modprobe dvb_hdhomerun && sleep 3 && \/usr\/bin\/userhdhomerun &/d' /boot/config/go
+		echo "modprobe dvb_hdhomerun && sleep 3 && /usr/bin/userhdhomerun &" >> /boot/config/go
 		echo "... ALL DONE. Please reboot your machine"
 	else
 		echo "... ERROR. Something went wrong..."
 	fi
 	
 	sleep 3
+}
+
+tvheadend_storagesize() 
+{
+	if [ $1 ] && [ $2 ]; then
+		if [ -d $1 ]; then
+			INST=`du -sh $1 | cut -f1`
+		elif [ -f $1 ]; then
+			INST=`ls -lah $1 | awk '{ print $5}'`
+		fi
+	
+		if [ -d $2 ]; then
+			DAT=`du -sh $2 | cut -f1`
+		elif [ -f $2 ]; then
+			DAT=`ls -lah $2 | awk '{ print $5}'`
+		fi
+		
+		if [ $1 == $2 ]; then
+			echo "<p style="margin-left:10px\;">Storage memory usage: install + data directory: <b>$INST</b></p>"
+		else
+			echo "<p style="margin-left:10px\;">Storage memory usage: install directory: <b>$INST</b>, data directory: <b>$DAT</b></p>"
+		fi
+	elif [ $1 ]; then
+		if [ -d $1 ]; then
+			INST=`du -sh $1 | cut -f1`
+		elif [ -f $1 ]; then
+			INST=`ls -lah $1 | awk '{ print $5}'`
+		fi
+		echo "<p style="margin-left:10px\;">Storage memory usage: <b>$INST</b></p>"
+	fi
 }
 
 tvheadend_datacheck() 
@@ -238,13 +311,13 @@ tvheadend_datacheck()
 	for i in "${array[@]}"
 	do
 		if [ $i = $fs ]; then
-		    echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b> Your Data Directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
+		    echo "<p style="color:red\;margin-left:10px\;margin-right:10px\;"><b>WARNING:</b> Your data directory is not persistent and WILL NOT survive a reboot. Please locate Data Directory on disk for persistency</p>"
 			break
 		elif [ $i = msdos ]; then
-			echo "<p style="color:red\;margin-left:10px\;"><b>WARNING:</b> Your Data Directory is located on your flash drive. This will decrease your flash drives life span!</p>"
+			echo "<p style="color:red\;margin-left:10px\;margin-right:10px\;"><b>WARNING:</b> Your data directory is located on your flash drive. This will decrease your flash drives life span!</p>"
 			break
 		else
-			echo "<p style="color:green\;margin-left:10px\;">Your data will persist after a reboot</p>"
+			echo "<p style="color:green\;margin-left:10px\;margin-right:10px\;">Your data will persist after a reboot</p>"
 			break
 		fi
 	done
@@ -264,10 +337,10 @@ case "$1" in
 		tvheadend_restart
 	;;
 	'enable')
-		tvheadend_enable $2 $3 $4 $5 $6
+		tvheadend_enable $2 $3 $4 $5 $6 $7 $8 $9
 	;;
 	'disable')
-		tvheadend_disable $2 $3 $4 $5 $6
+		tvheadend_disable $2 $3 $4 $5 $6 $7 $8 $9
 	;;
 	'install')
 		tvheadend_install
@@ -275,11 +348,14 @@ case "$1" in
 	'dvb')
 		tvheadend_dvb_install $2
 	;;
+	'storagesize')
+		tvheadend_storagesize $2 $3
+	;;
 	'datacheck')
 		tvheadend_datacheck
 	;;
 	*)
-		echo "usage $0 start|stop|restart|enable|disable|install|dvb|datacheck"
+		echo "usage $0 start|stop|restart|enable|disable|install|dvb|storagesize|datacheck"
 esac
 ]]>
 </INLINE>
@@ -293,7 +369,7 @@ Icon="tvheadend.png"
 Version="0.2"
 Author="Wojciech Walaszek"
 Type="php"
-Title="Tvheadend"
+Title="Tvheadend "
 ]]>
 </INLINE>
 </FILE>
@@ -307,28 +383,89 @@ Title="Tvheadend"
 <![CDATA[
 <?PHP
 $tvheadend_cfg = parse_ini_file( "/boot/config/plugins/tvheadend/tvheadend.cfg" );
-$tvheadend_installed = file_exists( "/usr/bin/tvheadend" ) ? "yes" : "no";
+$tvheadend_installed = file_exists( $tvheadend_cfg[DATADIR] ) ? "yes" : "no";
 $tvheadend_kernel = trim(shell_exec( "uname -r" ));
 $tvheadend_mtree = file_exists( "/lib/modules/$tvheadend_kernel/kernel/drivers/media" ) ? "yes" : "no";
 $tvheadend_dvb = file_exists( "/dev/dvb/adapter0/frontend0") ? "yes" : "no";
 if ($tvheadend_installed=="yes")
 {
-	$tvheadend_datacheck = shell_exec ( "/etc/rc.d/rc.tvheadend datacheck" );
 	$tvheadend_running = file_exists( "/var/run/tvheadend.pid") ? "yes" : "no";
-	$tvheadend_installdirsize = trim(shell_exec( "ls -lah /usr/bin/tvheadend | awk '{ print $5}'"));
-	$tvheadend_datadirsize = trim(shell_exec( "if [ -e $tvheadend_cfg[DATADIR] ]; then du -sh $tvheadend_cfg[DATADIR] | cut -f1; else echo 0; fi" ));
+	if ($tvheadend_cfg[PLG_STORAGESIZE]=="yes")
+		$tvheadend_datasize = shell_exec ( "/etc/rc.d/rc.tvheadend storagesize /usr/bin/tvheadend $tvheadend_cfg[DATADIR]" );
+	if ($tvheadend_cfg[PLG_DATACHECK]=="yes")
+		$tvheadend_datacheck = shell_exec ( "/etc/rc.d/rc.tvheadend datacheck" );
 	$tvheadend_log = trim(shell_exec( "if [ -f $tvheadend_cfg[DATADIR]/superuser ]; then cat $tvheadend_cfg[DATADIR]/superuser | cut -d'\"' -f4; else echo; fi" ));
 	$tvheadend_pass = trim(shell_exec( "if [ -f $tvheadend_cfg[DATADIR]/superuser ]; then cat $tvheadend_cfg[DATADIR]/superuser | cut -d'\"' -f8; else echo; fi" ));
+	$tvheadend_xmltv = trim(shell_exec( "cat /boot/config/plugins/tvheadend/tv_grab_file | grep 'wget -qO - ' | cut -d' ' -f4" ));
 	$tvheadend_reboot = file_exists( "/tmp/tvheadend_dvb_ctrl" ) ? "yes" : "no";
 }
+
 ?>
+<div style="width: 49%; float:left">
+	<div id="title">
+		<span class="left"><img src='/plugins/simpleFeatures/icons/device_status.png' class='icon'>Status:
+			<?if ($tvheadend_installed=="yes"):?>	
+				<?if ($tvheadend_running=="yes"):?>
+					<a href="http://<?=$var['NAME'];?>:9981" target="_blank"><span class="green"><b>RUNNING</b></span></a>
+				<?else:?>
+					<span class="red"><b>STOPPED</b></span>
+				<?endif;?>
+			<?else:?>
+				<span class="red"><b>NOT INSTALLED</b></span>
+			<?endif;?>	
+		</span>
+	</div>	
+	<?if ($tvheadend_installed=="yes"):?>
+		<div style="position:relative;float:left;width:50%;text-align:right; margin-bottom:24px">
+			<form name="tvheadend_start_stop" method="POST" action="/update.htm" target="progressFrame">
+				<?if ($tvheadend_running=="yes"):?>
+					<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend stop">
+					<input type="submit" name="runCmd" value="Stop">
+				<?else:?>
+					<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend start">
+					<input type="submit" name="runCmd" value="Start">
+					<!--
+					<input type="text" style="display:none;" name="comment1" value="For properly working of XMLTV in Tvheadend it is recommended to start Tvheadend from GO script">
+					<img src="/plugins/simpleFeatures/images/information.png" align="absbottom" style="margin-right:15px;" class="tooltip" title="For properly working of XMLTV in Tvheadend it is recommended to start Tvheadend from GO script" />
+					-->
+				<?endif;?>
+			</form>
+		</div>
+		<div style="position:relative;float:left;width:50%;margin-bottom:24px">
+			<form name="tvheadend_restart" method="POST" action="/update.htm" target="progressFrame">
+					<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend restart">
+					<input type="submit" name="runCmd" value="Restart">
+			</form>
+		</div>
+	<?else:?>
+		<div style="position:relative;float:left;width:100%;text-align:center;margin-bottom:24px">
+			<form name="tvheadend_install" method="POST" action="/update.htm" target="progressFrame">
+				<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend install">
+				<input type="submit" name="runCmd" value="Install">
+			</form>
+		</div>
+	<?endif;?>
+	<? if ($tvheadend_installed=="yes"): ?>	
+		<center><hr size="3" width="50%" color="grey"></center>
+		<? if ($tvheadend_cfg[PLG_STORAGESIZE]=="yes"): ?>
+			<?=$tvheadend_datasize?>
+		<? endif; ?>
+		<? if ($tvheadend_cfg[PLG_DATACHECK]=="yes"): ?>
+			<?=$tvheadend_datacheck?>
+		<? endif; ?>	
+	<? endif; ?>
+</div>
+<div style="width: 49%; float:right">
+	<div id="title">
+		<span class="left"><img src='/plugins/simpleFeatures/icons/new_config.png' class='icon'>Configuration:</span>
+	</div>
 	<form name="tvheadend_settings" method="POST" action="/update.htm" target="progressFrame">
 		<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend">
 		<table class="settings">
 			<tr>
 				<td>Enable Tvheadend:</td>
 				<td>
-					<select name="arg1" size="1"  onChange="checkINSTALLDIR(this.form);">
+					<select name="arg1" size="1" onChange="checkRUNNING(this.form);">
 						<?=mk_option($tvheadend_cfg['SERVICE'], "disable", "No");?>
 						<?=mk_option($tvheadend_cfg['SERVICE'], "enable", "Yes");?>
 					</select>
@@ -345,144 +482,180 @@ if ($tvheadend_installed=="yes")
 			<tr>
 				<td>Run as user:</td>
 				<td>
-					<select name="runas" size="1"  onChange="checkUSER(this.form);">
+					<select name="runas" size="1" onChange="checkUSER(this.form);">
 						<?=mk_option($tvheadend_cfg['RUNAS'], "nobody", "nobody");?>
 						<?=mk_option($tvheadend_cfg['RUNAS'], "root", "root");?>
 						<option value='other'<?=($tvheadend_cfg['RUNAS'] != "root" && $tvheadend_cfg['RUNAS'] != "nobody")?" selected=yes":"" ;?>>other</option>
 					</select>
-					<input type="hidden" name="arg2" maxlength="40" value="<?=$tvheadend_cfg['RUNAS'];?>">
+					<input type="hidden" name="arg2" style="width:auto" maxlength="40" value="<?=$tvheadend_cfg['RUNAS'];?>">
+				</td>
+			</tr>
+			<tr><td>---</td></tr>
+			<tr>
+				<td>Show storage memory usage:</td>
+				<td>
+					<select name="storagesize" size="1" onChange="checkSTORAGE(this.form);">
+						<?=mk_option($tvheadend_cfg['PLG_STORAGESIZE'], "yes", "Yes");?>
+						<?=mk_option($tvheadend_cfg['PLG_STORAGESIZE'], "no", "No");?>
+					</select>
+					<input type="hidden" name="arg8" value="<?=$tvheadend_cfg['PLG_STORAGESIZE'];?>">
 				</td>
 			</tr>
 			<tr>
-				<td><input type="submit" name="runCmd" value="APPLY" style="width:99%;height:28px;font-size:12px;"></td>
-				<td><button type="button" style="width:36%;height:28px;font-size:12px;" onClick="done();">DONE</button></td>
+				<td>Show data persistency information:</td>
+				<td>
+					<select name="datacheck" size="1" onChange="checkDATA(this.form);">
+						<?=mk_option($tvheadend_cfg['PLG_DATACHECK'], "yes", "Yes");?>
+						<?=mk_option($tvheadend_cfg['PLG_DATACHECK'], "no", "No");?>
+					</select>
+					<input type="hidden" name="arg9" value="<?=$tvheadend_cfg['PLG_DATACHECK'];?>">
+				</td>
 			</tr>
 		</table>
-		<?if ($tvheadend_installed=="yes"):?>		
-			<div>
-				<input type="button" value="SHOW ADVANCED CONFIGURATION" style="width:52%;height:28px;font-size:12px;margin-left:10px" onClick="if (this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display != '') { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = '';	this.innerText = ''; this.value = 'HIDE ADVANCED CONFIGURATION'; } else { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = 'none'; this.innerText = ''; this.value = 'SHOW ADVANCED CONFIGURATION'; }">
+		<div align="center">
+			<hr size="3" align="center" width="75%" color="grey" style="margin-top:20px;margin-bottom:18px" >
+			<input type="submit" name="runCmd" value="Apply" style="margin-bottom:8px">
+			<? if ($tvheadend_installed=="yes"): ?>
+				<input type="button" value="Show advanced configuration" style="margin-bottom:8px" onClick="if (this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display != '') { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = '';	this.innerText = ''; this.value = 'Hide advanced configuration'; } else { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = 'none'; this.innerText = ''; this.value = 'Show advanced configuration'; }">
+			<? endif; ?>
+			<button type="button" style="margin-bottom:8px" onClick="done();">Done</button>
+		</div>
+		<div>
+			<div style="display: none;">
+				<br />
+				<table class="settings">
+					<tr>
+						<td>Login:</td>
+						<td><input type="text" name="arg5" maxlength="40" value="<?=$tvheadend_log;?>"></td>
+					</tr>
+					<tr>
+						<td>Password:</td>
+						<td><input type="password" name="arg6" maxlength="40" value="<?=$tvheadend_pass;?>"></td>
+					</tr>
+					<tr>
+						<td>XML TV:</td>
+						<td>
+							<select name="xmltv" size="1" onChange="checkXMLTV(this.form);">
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvbenl.gz", "Benelux");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvbulsat.gz", "Bulgaria");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvnordic.gz", "Denmark");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltverotic.gz", "Erotic");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvnordic.gz", "Finland");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvcsat.gz", "France");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvskyde.gz", "Germany/Austria/Swiss");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvnova.gz", "Greece");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvnova.gz", "Greece in English");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvmagyar.gz", "Hungary");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvosn.gz", "Israel");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvskyit.gz", "Italy");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvnordic.gz", "Norway");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvosn.gz", "TVBS/OSN/JSC Sport");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvpoland.gz", "Poland");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvportugal.gz", "Portugal");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvromania.gz", "Romania");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvexyu.gz", "Serbia/Croatia/Montenegro");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvskylink.gz", "Slovak/Czech");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvexyu.gz", "Slovenia");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvdplus.gz", "Spain");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvnordic.gz", "Sweden");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvturkey.gz", "Turkey");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvuk.gz", "UK");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytec.channels.xml.gz", "UK BBCi");?>
+								<?=mk_option($tvheadend_xmltv, "http://rytec.sifteam.eu/rytecxmltvcsathorizons.gz", "Csat Horizons/Reunion/Carabean");?>
+								<?=mk_option($tvheadend_xmltv, "http://www.ccomputers.co.za/ZA-XMLTV.XML.gz", "ZA Multichoice/DSTV/OSN");?>
+								<?=mk_option($tvheadend_xmltv, "http://linux-sat.tv/epg/tvprogram_ua_ru.gz", "Linuxsat ExUSSR");?>
+							</select>
+							<input type="hidden" name="arg7" value="xmltv.value">
+						</td>
+					</tr>
+				</table>
 			</div>
-			<div>
-				<div style="display: none;">
-					<br />
-					<table class="settings">
-						<tr>
-							<td>Login:</td>
-							<td><input type="text" name="arg5" maxlength="40" value="<?=$tvheadend_log;?>"></td>
-						</tr>
-						<tr>
-							<td>Password:</td>
-							<td><input type="password" name="arg6" maxlength="40" value="<?=$tvheadend_pass;?>"></td>
-						</tr>
-					</table>
-				</div>
-			</div>
-		<?endif;?>	
+		</div>
 	</form>
 <br />
-<form name="tvheadend_settings" method="POST" action="/update.htm" target="progressFrame">
-	<div id="title"><span class="left">Status:
-	<?if ($tvheadend_installed=="yes"):?>	
-		<?if ($tvheadend_running=="yes"):?>
-			<a href="http://<?=$var['NAME'];?>:9981" target="_blank"><span class="green"><b>RUNNING</b></span></a>
-			<span>
-				<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend stop">
-				<input type="submit" name="runCmd" value="STOP" style="padding-bottom:8px;margin-left:2px">
-			</span>
-		<?else:?>
-			<span class="red"><b>STOPPED</b></span>
-			<span>
-				<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend start">
-				<input type="submit" name="runCmd" value="START" style="padding-bottom:8px;margin-left:2px">
-			</span>
-		<?endif;?>
-	<?else:?>
-		<span class="red"><b>NOT INSTALLED</b></span>
-		<span>
-			<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend install">
-			<input type="submit" name="runCmd" value="INSTALL" style="padding-bottom:8px;margin-left:2px">
-		</span>
-	<?endif;?>	
-	</span></div>	
-</form>
-<? if ($tvheadend_installed=="yes"): ?>	
-	<? if ($tvheadend_installdirsize!=0 && $tvheadend_installdirsize!=""): ?>
-		<? if ($tvheadend_cfg["INSTALLDIR"] == $tvheadend_cfg["DATADIR"]): ?>
-			<p style="margin-left:10px;">Tvheadend storage memory usage: install + data directory: <b><?=$tvheadend_installdirsize?></b></p>
-		<? else: ?>
-			<p style="margin-left:10px;">Tvheadend storage memory usage: install directory: <b><?=$tvheadend_installdirsize?></b>, data directory: <b><?=$tvheadend_datadirsize?></b></p>
-		<? endif; ?>
-	<? endif; ?>
-	<?=$tvheadend_datacheck?>
-<? endif; ?>	
-
-<div id="title"><span class="left">System requirements:
-	<?if ($tvheadend_mtree=="yes" && $tvheadend_dvb=="yes" && $tvheadend_log!="" && $tvheadend_pass!=""):?>
-		<span class="green"><b>PASSED</b></span>
-	<? else: ?>
-		<span class="orange"><b>WARNING</b></span>
-	<?endif;?>	
-</span></div>
-<form name="tvheadend_download_install" method="POST" action="/update.htm" target="progressFrame">
-	<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend dvb">
-	<table class="settings">
-		<tr>
-			<td>MEDIA tree:</td>
-			<?if ($tvheadend_mtree=="yes"):?>
-				<td style="color:green">DETECTED</td>
-			<?else:?>
-				<td style="color:red"><b>NOT DETECTED</b></td>
-		</tr>
-		<tr>
-			<td></td>
-			<td>There is no MEDIA tree in your system, however it is possible to download bzroot and bzimage files with MEDIA tree into your system.
-				<br />To do this just choose from dropdown list which tuner do you have and push 'Download & Install' button.
-				<br />If you don't have a Dvbsky or TBS tuner but you have some other then choose what you want.
-				<br />Your current bzroot and bzimage files will be backed up. After download and install this files you should reboot your system.
-				<br /> Please note that the bzroot and bzimage files are based on 5.0-rc4 unRAID system.
-				<br /><b>MAKE A CHOICE ONLY IF YOU KNOW WHAT YOU ARE DOING</b>&nbsp;&nbsp;&nbsp;
-				<select name="arg1" size="1" onChange="checkDVB(this.form);">
-						<?=mk_option("DVB", "no", "Do not install");?>
-						<?=mk_option("DVB", "dvbsky", "Install for Dvbsky tuners and other");?>
-						<?=mk_option("DVB", "tbs", "Install for TBS tuners and other");?>
-				</select>
-				<input type="submit" name="runCmd" value="Download & Install">
-				<b>USE IT AT YOUR OWN RISK</b>
-				<? if ($tvheadend_reboot=="yes"): ?>
-					<br /><br />Status: <font style="color:blue"><b>MEDIA TREE DOWNLOADED AND INSTALLED, PLEASE REBOOT YOUR SYSTEM</b></font><br />				
-				<? endif; ?>	
-			</td>
-		</tr>
-			<?endif;?>		
-		<tr>
-			<td>DVB tuner:</td>
-			<?if ($tvheadend_dvb=="yes"):?>
-				<td style="color:green">DETECTED</td>
-			<?else:?>
-				<td style="color:red"><b>NOT DETECTED</b></td>
-		</tr>
-		<tr>
-			<td></td>
-			<td>There is no DVB-S/S2, DVB-T or DVB-C tuner in your system.</td>
-		</tr>
-			<?endif;?>
-		<tr>
-			<td>Tvheadend login/password:</td>
-			<?if ($tvheadend_log!="" && $tvheadend_pass!=""):?>
-				<td style="color:green">ACCEPTED</td>
-			<?else:?>
-				<td style="color:red"><b>NOT ACCEPTED</b></td>
-		</tr>
-		<tr>
-			<td></td>
-			<td>You should set Tvheadend login and password in 'ADVANCED CONFIGURATION' and then just hit 'APPLY' button.</td>
-		</tr>
+</div>
+<div style="width: 49%; float:left">
+	<div id="title">
+		<span class="left"><img src='/plugins/simpleFeatures/icons/confirmations.png' class='icon'>System requirements:
+			<?if ($tvheadend_mtree=="yes" && $tvheadend_dvb=="yes" && $tvheadend_log!="" && $tvheadend_pass!=""):?>
+				<span class="green"><b>PASSED</b></span>
+			<? else: ?>
+				<?if ($tvheadend_installed=="yes"):?>
+					<span class="orange"><b>WARNING</b></span>
+				<?endif;?>
 			<?endif;?>	
-	</table>
-</form>
-	
+		</span>
+	</div>
+	<form name="tvheadend_download_install" method="POST" action="/update.htm" target="progressFrame">
+		<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend dvb">
+		<table class="settings">
+			<tr>
+				<td>MEDIA tree:</td>
+				<?if ($tvheadend_mtree=="yes"):?>
+					<td style="color:green">DETECTED</td>
+				<?else:?>
+					<td style="color:red"><b>NOT DETECTED</b></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>There is no MEDIA tree in your system, however it is possible to download bzroot
+					<br />and bzimage files with MEDIA tree into your system. To do this just choose from
+					<br />dropdown list which tuner do you have and push 'Download & Install' button.
+					<br />If you don't have a Dvbsky, HDHomeRun or TBS tuner but you have some other then
+					<br />choose what you want. Your current bzroot and bzimage files will be backed up.
+					<br />After download and install these files you should reboot your system.
+					<br /> Please note that the bzroot and bzimage files are based on <b>5.0-rc4</b> unRAID system.
+					<center>
+						<b>MAKE A CHOICE ONLY IF YOU KNOW WHAT YOU ARE DOING</b>
+						<br />
+						<select name="arg1" size="1" onChange="checkDVB(this.form);" style="margin-bottom:4px;margin-top:4px;">
+								<?=mk_option("DVB", "no", "Do not install");?>
+								<?=mk_option("DVB", "dvbsky", "Install for Dvbsky tuners and other");?>
+								<?=mk_option("DVB", "dvbhdhomerun", "Install for HDHomeRun tuners and other");?>
+								<?=mk_option("DVB", "tbs", "Install for TBS tuners and other");?>
+						</select>
+						<input type="hidden" name="runCmd" value="Download & Install">
+						<br /><b>USE IT AT YOUR OWN RISK</b>
+						<? if ($tvheadend_reboot=="yes"): ?>
+							<br /><br /><font style="color:blue"><b>MEDIA TREE DOWNLOADED AND INSTALLED, PLEASE REBOOT YOUR SYSTEM</b></font><br />				
+						<? endif; ?>
+					</center>		
+				</td>
+			</tr>
+				<?endif;?>		
+			<tr>
+				<td>DVB tuner:</td>
+				<?if ($tvheadend_dvb=="yes"):?>
+					<td style="color:green">DETECTED</td>
+				<?else:?>
+					<td style="color:red"><b>NOT DETECTED</b></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>There is no DVB-S/S2, DVB-T or DVB-C tuner in your system.</td>
+			</tr>
+				<?endif;?>
+					<?if ($tvheadend_installed=="yes"):?>
+						<tr>
+							<td>Tvheadend login/password:</td>
+							<?if ($tvheadend_log!="" && $tvheadend_pass!=""):?>
+								<td style="color:green">ACCEPTED</td>
+							<?else:?>
+								<td style="color:red"><b>NOT ACCEPTED</b></td>
+								</tr>
+								<tr>
+									<td></td>
+									<td>You should set Tvheadend login and password in 'Advanced configuration'
+									<br /><and then just hit 'Apply' button.</td>
+								</tr>
+							<?endif;?>
+					<?endif;?>	
+		</table>
+	</form>
+</div>
+
 <script type="text/javascript">
-function checkINSTALLDIR(form)
+function checkRUNNING(form)
 {
 	if ("<?=$tvheadend_running;?>" == "yes")
 	{
@@ -491,7 +664,13 @@ function checkINSTALLDIR(form)
 		form.arg4.readOnly = true;
 		form.arg5.readOnly = true;
 	    form.arg6.readOnly = true;
+		form.arg7.readOnly = true;
+		form.arg8.readOnly = true;
+		form.arg9.readOnly = true;
 		form.runas.disabled = true;
+		form.storagesize.disabled = true;
+		form.datacheck.disabled = true;
+		form.xmltv.disabled = true;
 	}
 	else
 	{
@@ -500,7 +679,13 @@ function checkINSTALLDIR(form)
 	    form.arg4.readOnly = (form.arg1.value == "enable");
 		form.arg5.readOnly = (form.arg1.value == "enable");
 	    form.arg6.readOnly = (form.arg1.value == "enable");
+		form.arg7.readOnly = (form.arg1.value == "enable");
+		form.arg8.readOnly = (form.arg1.value == "enable");
+		form.arg9.readOnly = (form.arg1.value == "enable");
 	    form.runas.disabled = (form.arg1.value == "enable");
+		form.storagesize.disabled = (form.arg1.value == "enable");
+		form.datacheck.disabled = (form.arg1.value == "enable");
+		form.xmltv.disabled = (form.arg1.value == "enable");
 	}
 }
 
@@ -518,6 +703,21 @@ function checkUSER(form)
 	}
 }
 
+function checkSTORAGE(form)
+{
+	form.arg8.value = form.storagesize.options[form.storagesize.selectedIndex].value;
+}
+
+function checkDATA(form)
+{
+	form.arg9.value = form.datacheck.options[form.datacheck.selectedIndex].value;
+}
+
+function checkXMLTV(form)
+{
+	form.arg7.value = form.xmltv.options[form.xmltv.selectedIndex].value;
+}
+
 function checkDVB(form)
 {
 	if (form.arg1.selectedIndex == 0 )
@@ -526,8 +726,11 @@ function checkDVB(form)
 		form.runCmd.type = "submit";
 }
 
-checkINSTALLDIR(document.tvheadend_settings);
+checkRUNNING(document.tvheadend_settings);
 checkUSER(document.tvheadend_settings);
+checkSTORAGE(document.tvheadend_settings);
+checkDATA(document.tvheadend_settings);
+checkXMLTV(document.tvheadend_settings);
 checkDVB(document.tvheadend_download_install);
 </script>
 ]]>
@@ -539,7 +742,10 @@ checkDVB(document.tvheadend_download_install);
 <INLINE>
 <![CDATA[
 #!/bin/bash
+#CTR=`cat /boot/config/go | grep ^/usr/bin/tvheadend | cut -d' ' -f1`
+#if [ $CTR != "/usr/bin/tvheadend" ]; then
 /etc/rc.d/rc.tvheadend start
+#fi
 ]]>
 </INLINE>
 </FILE>
