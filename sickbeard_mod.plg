@@ -181,7 +181,7 @@ sickbeard_change_settings()
 	fi
 	
 	if [ $RUNAS != $1 ]; then
-		chown -R $1:users "$INSTALLDIR" DATADIR="$4"
+		chown -R $1:users "$INSTALLDIR" "$DATADIR"
 	fi
 	
 	RUNAS="$1"
