@@ -436,7 +436,7 @@ if (file_exists($couchpotato_configfile))
 			</tr>
 			<tr>
 				<td>Data directory:</td>
-				<td><input type="checkbox" name="use_data" id="use_data" <?=($couchpotato_cfg['DATADIR']!=$couchpotato_cfg['INSTALLDIR'])?"checked=\"checked\"":"";?>  onChange="checkDATADIR(this.form);"> <input type="text" name="arg5" style="width:86%" maxlength="60" value="<?=$couchpotato_cfg['DATADIR'];?>"></td>
+				<td><input type="checkbox" name="use_data" <?=($couchpotato_cfg['DATADIR']!=$couchpotato_cfg['INSTALLDIR'])?"checked=\"checked\"":"";?>  onChange="checkDATADIR(this.form);"> <input type="text" name="arg5" style="width:86%" maxlength="60" value="<?=$couchpotato_cfg['DATADIR'];?>"></td>
 			</tr>
 			<tr>
 				<td>Port:</td>
