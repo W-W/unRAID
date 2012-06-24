@@ -438,27 +438,6 @@ if (file_exists($sickbeard_configfile))
 		<? endif; ?>
 	<? endif; ?>
 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <div style="width: 49%; float:right">
 	<div id="title">
 		<span class="left"><img src='/plugins/simpleFeatures/icons/new_config.png' class='icon'>Configuration:</span>
