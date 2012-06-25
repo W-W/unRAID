@@ -18,3 +18,17 @@ A couple features to note:
 
 We hope you enjoy our plug-ins, if you have any issues post them either on the Lime-Technology forums or here on the issues page.
 If you want to change or add something interesting in our plugins go ahead, do it and post your commit.
+
+###Downloads:
+Right click and save link as;
+-  [Couchpotato_mod.plg](https://github.com/W-W/unRAID/raw/master/couchpotato_mod.plg)
+-  [Couchpotato_v2_mod.plg](https://github.com/W-W/unRAID/raw/master/couchpotato_v2_mod.plg)
+-  [Sabnzbd_mod.plg](https://github.com/W-W/unRAID/raw/master/sabnzbd_mod.plg)
+-  [Sickbeard_mod.plg](https://github.com/W-W/unRAID/raw/master/sickbeard_mod.plg)
+-  [Headphones_mod.plg](https://github.com/W-W/unRAID/raw/master/headphones_mod.plg)
+-  [Darkstat-1.9_mod.plg](https://github.com/W-W/unRAID/raw/master/darkstat-1.0_mod.plg)
+-  [Dropbox_mod.plg](https://github.com/W-W/unRAID/raw/master/dropbox_mod.plg)
+-  [Lazylibrarian_mod.plg](https://github.com/W-W/unRAID/raw/master/lazylibrarian_mod.plg)
+-  [Plex-media-server_mod.plg](https://github.com/W-W/unRAID/raw/master/plex-media-server_mod.plg)
+-  [Serviio_mod.plg](https://github.com/W-W/unRAID/raw/master/serviio_mod.plg)
+-  [TVHeadend_mod.plg](https://github.com/W-W/unRAID/raw/master/tvheadend_mod.plg)
