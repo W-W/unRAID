@@ -49,9 +49,9 @@ Also this plugin enables easy updates for SABnzbd, since the app doesn't have it
 <URL>http://slackware.cs.utah.edu/pub/slackware/slackware-13.37/slackware/a/infozip-6.0-i486-1.txz</URL>
 <MD5>4d59c199192a5fc4dc55089edcb66723</MD5>
 </FILE>
-<FILE Name="/boot/packages/openssl-0.9.8r-i486-3.txz" Run="upgradepkg --install-new">
-<URL>http://slackware.cs.utah.edu/pub/slackware/slackware-13.37/slackware/n/openssl-0.9.8r-i486-3.txz</URL>
-<MD5>dd6ef02ebfe3e54fc54c03a52f736197</MD5>
+<FILE Name="/boot/packages/openssl-solibs-0.9.8x-i486-1.txz" Run="upgradepkg --install-new">
+<URL>http://www.slackware.org.uk/slackware/slackware-current/slackware/a/openssl-solibs-0.9.8x-i486-1.txz</URL>
+<MD5>545a3d0cc1f77f8d335bbbd4bacdbb12</MD5>
 </FILE>
 <FILE Name="/boot/packages/pyopenssl-0.11-i486-1alien.tgz" Run="upgradepkg --install-new">
 <URL>http://connie.slackware.com/~alien/slackbuilds/pyopenssl/pkg/13.37/pyopenssl-0.11-i486-1alien.tgz</URL>
@@ -178,17 +178,17 @@ sabnzbd_enable()
 		INSTALLDIR="$3"
 		DATADIR="$4"
 		INSTALLBETA="$5"
-
+	
 		if [ $DATADIR == "" ]; then
 			$DATADIR=$INSTALLDIR
 		fi
-
+	
 		if [ $RUNAS != $1 ]; then
 			chown -R $1:users "$INSTALLDIR"
 		fi
-
+	
 		RUNAS="$1"
-
+	
 		# create sabnzbd user if necessary
 		if [[ $RUNAS != "nobody" && $RUNAS != "root" ]]; then
 			if ( ! grep -q ^$RUNAS /etc/passwd ); then
@@ -218,12 +218,12 @@ sabnzbd_install()
 	if [ ! -e "$DATADIR" ]; then 
 		mkdir -p "$DATADIR"
 	fi
-
+	
 	echo $INSTALLBETA
 	if [[ $INSTALLBETA = "" || $INSTALLBETA = "no" ]]; then
 		stable=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,"");print}'))
 		echo "installing latest Version ($stable)"
-
+	
 		cd /tmp
 		wget -q http://downloads.sourceforge.net/project/sabnzbdplus/sabnzbdplus/${stable}/SABnzbd-${stable}-src.tar.gz
 		tar -xf /tmp/SABnzbd-${stable}-src.tar.gz
@@ -260,7 +260,7 @@ sabnzbd_check_update()
 	if [[ $INSTALLBETA = "no" || $INSTALLBETA = "" ]]; then
 		sabnzbd_version
 		stable=($(wget -q -O - http://sabnzbdplus.sourceforge.net/version/latest | awk '/0/{gsub(/\015/,"");print}'))
-
+	
 		if [[ $currentversion != "" && $currentversion != $stable ]]; then
 			echo "Stable update available to version: $stable"
 		fi
