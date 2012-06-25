@@ -299,6 +299,9 @@ sickbeard_datacheck()
 
 # read our configuration
 source /boot/config/plugins/sickbeard/sickbeard.cfg
+if [ -e "$CONFIGFILE" ]; then
+	PORT=`cat "$CONFIGFILE" | grep 'web_port' | cut -d' ' -f3`
+fi
 
 case "$1" in
 	'start')
