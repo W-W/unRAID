@@ -77,7 +77,9 @@ port = 8082
 # Start/stop/restart/enable/disable couchpotato v2.
 
 couchpotato_start()
-{
+{	
+	while ! test -d /mnt/disk1; do sleep 5; continue; done
+
 	# no-op if not enabled
 	if [ $SERVICE != "enable" ]; then
 		echo "CouchPotato couldn't start because isn't enabled"
