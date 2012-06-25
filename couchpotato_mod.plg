@@ -53,7 +53,6 @@ SERVICE="disable"
 INSTALLDIR="/usr/local/couchpotato"
 CONFIGFILE="/boot/config/plugins/couchpotato/config.ini"
 DATADIR="/usr/local/couchpotato"
-PORT="8082"
 RUNAS="nobody"
 PLG_STORAGESIZE="yes"
 PLG_DATACHECK="yes"
@@ -150,7 +149,6 @@ write_config()
 	echo "INSTALLDIR=\"$INSTALLDIR\"" >> /boot/config/plugins/couchpotato/couchpotato.cfg
     echo "CONFIGFILE=\"$CONFIGFILE\"" >> /boot/config/plugins/couchpotato/couchpotato.cfg
 	echo "DATADIR=\"$DATADIR\"" >> /boot/config/plugins/couchpotato/couchpotato.cfg
-	echo "PORT=\"$PORT\"" >> /boot/config/plugins/couchpotato/couchpotato.cfg
 	echo "RUNAS=\"$RUNAS\"" >> /boot/config/plugins/couchpotato/couchpotato.cfg
 	echo "PLG_STORAGESIZE=\"$PLG_STORAGESIZE\"" >> /boot/config/plugins/couchpotato/couchpotato.cfg
 	echo "PLG_DATACHECK=\"$PLG_DATACHECK\"" >> /boot/config/plugins/couchpotato/couchpotato.cfg
@@ -288,6 +286,7 @@ couchpotato_datacheck()
 
 # read our configuration
 source /boot/config/plugins/couchpotato/couchpotato.cfg
+	if [ -e "$CONFIGFILE" ]; then PORT=`cat "$CONFIGFILE" | grep 'port = ' | cut -d' ' -f3 | awk 'NR==1'`; fi
 
 case "$1" in
 	'start')
@@ -359,7 +358,7 @@ if ($couchpotato_installed=="yes")
 
 //get CouchPotato port
 if (file_exists($couchpotato_configfile))
-	$couchpotato_port = trim(shell_exec( "cat \"$couchpotato_configfile\" | grep 'port = ' | cut -d' ' -f3 | awk 'NR==1'" ));
+	$couch_port = trim(shell_exec( "cat \"$couchpotato_configfile\" | grep 'port = ' | cut -d' ' -f3 | awk 'NR==1'" ));
 
 ?>
 
@@ -368,7 +367,7 @@ if (file_exists($couchpotato_configfile))
 		<span class="left"><img src='/plugins/simpleFeatures/icons/device_status.png' class='icon'>Status:
 			<?if ($couchpotato_installed=="yes"):?>	
 				<?if ($couchpotato_running=="yes"):?>
-					<a href="http://<?=$var['NAME'];?>:<?=$couchpotato_cfg['PORT'];?>" target="_blank"><span class="green"><b>RUNNING</b></span></a>
+					<a href="http://<?=$var['NAME'];?>:<?=$couch_port;?>" target="_blank"><span class="green"><b>RUNNING</b></span></a>
 				<?else:?>
 					<span class="red"><b>STOPPED</b></span>
 				<?endif;?>
@@ -440,7 +439,7 @@ if (file_exists($couchpotato_configfile))
 			</tr>
 			<tr>
 				<td>Port:</td>
-				<td><input type="text" name="arg3" maxlength="40" value="<?=$couchpotato_cfg['PORT'];?>"></td>
+				<td><input type="text" name="arg3" maxlength="40" value="<?=$couch_port;?>"></td>
 			</tr>
 			<tr>
 				<td>Run as user:</td>
