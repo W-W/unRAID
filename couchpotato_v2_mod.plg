@@ -274,7 +274,6 @@ couchpotato_storagesize()
 
 couchpotato_datacheck() 
 {
-	DATADIR="`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`"
 	array=( ramfs proc tempfs sysfs )
 	fs=$( stat -f -c '%T' $DATADIR )
 	for i in "${array[@]}"
@@ -294,6 +293,10 @@ couchpotato_datacheck()
 
 # read our configuration
 source /boot/config/plugins/couchpotato_v2/couchpotato_v2.cfg
+if [ -e "$CONFIGFILE" ]; then
+	DATADIR=`cat "$CONFIGFILE" | grep 'data_dir' | cut -d' ' -f3`
+	PORT=`cat "$CONFIGFILE" | grep 'port = ' | cut -d' ' -f3 | awk 'NR==2'`
+fi
 
 case "$1" in
 	'start')
