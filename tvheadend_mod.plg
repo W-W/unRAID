@@ -325,6 +325,7 @@ tvheadend_datacheck()
 
 # read our configuration
 source /boot/config/plugins/tvheadend/tvheadend.cfg
+XMLTV=`cat /boot/config/plugins/tvheadend/tv_grab_file | grep 'wget -qO - ' | cut -d' ' -f4`
 
 case "$1" in
 	'start')
