@@ -85,7 +85,7 @@ couchpotato_start()
 	fi
   
 	# no-op if already running
-	if [ -r /var/run/couchpotato.pid ]; then
+	if [ -r /var/run/couchpotato/couchpotato.pid ]; then
 		return
 	fi
   
@@ -94,12 +94,12 @@ couchpotato_start()
 		couchpotato_install
 	fi
   
-	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/CouchPotato.py -d --config $CONFIGFILE --datadir $DATADIR --port $PORT --pidfile /var/run/couchpotato.pid"
+	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/CouchPotato.py -d --config $CONFIGFILE --datadir $DATADIR --port $PORT --pidfile /var/run/couchpotato/couchpotato.pid"
 	echo "Starting CouchPotato: $CMDLINE"
 	sleep 1
 	$CMDLINE
   
-	while [ ! -e /var/run/couchpotato.pid ]; do
+	while [ ! -e /var/run/couchpotato/couchpotato.pid ]; do
 		sleep 1
 	done
 	echo "... OK"
@@ -109,18 +109,18 @@ couchpotato_start()
 couchpotato_stop()
 {
 	# no-op if not running
-	if [ ! -r /var/run/couchpotato.pid ]; then
+	if [ ! -r /var/run/couchpotato/couchpotato.pid ]; then
 		return
 	fi
 
 	echo "Stopping CouchPotato..."
 	sleep 1
-	kill $(cat /var/run/couchpotato.pid)
+	kill $(cat /var/run/couchpotato/couchpotato.pid)
 	sleep 3
 	
-	if [ -e /var/run/couchpotato.pid ]; then
-		kill -9 $(cat /var/run/couchpotato.pid )
-		rm /var/run/couchpotato.pid
+	if [ -e /var/run/couchpotato/couchpotato.pid ]; then
+		kill -9 $(cat /var/run/couchpotato/couchpotato.pid )
+		rm /var/run/couchpotato/couchpotato.pid
 	fi
 	echo "... OK"
 	sleep 1
@@ -286,7 +286,7 @@ couchpotato_datacheck()
 
 # read our configuration
 source /boot/config/plugins/couchpotato/couchpotato.cfg
-	if [ -e "$CONFIGFILE" ]; then PORT=`cat "$CONFIGFILE" | grep 'port = ' | cut -d' ' -f3 | awk 'NR==1'`; fi
+if [ -e "$CONFIGFILE" ]; then PORT=`cat "$CONFIGFILE" | grep 'port = ' | cut -d' ' -f3 | awk 'NR==1'`; fi
 
 case "$1" in
 	'start')
@@ -349,7 +349,7 @@ $couchpotato_installed = file_exists( $couchpotato_cfg["INSTALLDIR"] . "/CouchPo
 $couchpotato_configfile = $couchpotato_cfg["CONFIGFILE"];
 if ($couchpotato_installed=="yes")
 {
-	$couchpotato_running = file_exists( "/var/run/couchpotato.pid") ? "yes" : "no";
+	$couchpotato_running = file_exists( "/var/run/couchpotato/couchpotato.pid") ? "yes" : "no";
 	if ($couchpotato_cfg[PLG_STORAGESIZE]=="yes")
 		$couchpotato_datasize = shell_exec ( "/etc/rc.d/rc.couchpotato storagesize $couchpotato_cfg[INSTALLDIR] $couchpotato_cfg[DATADIR]" );
 	if ($couchpotato_cfg[PLG_DATACHECK]=="yes")
@@ -648,6 +648,23 @@ checkBRANCH(document.couchpotato_settings);
 <![CDATA[
 #!/bin/bash
 /etc/rc.d/rc.couchpotato stop
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/tmp/couchpotato-install" Run="/bin/bash">
+<INLINE>
+<![CDATA[
+# include our config vars
+source /boot/config/plugins/couchpotato/couchpotato.cfg
+
+# create CouchPotato writable directory for pid file
+if [ ! -d /var/run/couchpotato ]; then
+	mkdir /var/run/couchpotato
+	chown $RUNAS:users /var/run/couchpotato
+	chmod 777 /var/run/couchpotato
+fi
+rm /tmp/couchpotato-install
 ]]>
 </INLINE>
 </FILE>
