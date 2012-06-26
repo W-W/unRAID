@@ -94,7 +94,7 @@ couchpotato_start()
 		couchpotato_install
 	fi
   
-	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/CouchPotato.py -d --config $CONFIGFILE --datadir $DATADIR --port $PORT --pidfile /var/run/couchpotato/couchpotato.pid"
+	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/CouchPotato.py -d --config $CONFIGFILE --datadir $DATADIR --port $PORT --pidfile /var/run/couchpotato/couchpotato.pid 2>&1 >/dev/null"
 	echo "Starting CouchPotato: $CMDLINE"
 	sleep 1
 	$CMDLINE
