@@ -76,7 +76,7 @@ tvheadend_start()
 		chown -R $RUNAS:$GROUP /usr/bin/tv_grab_file
 	fi
 	
-	CMDLINE="sudo -u $RUNAS /usr/bin/tvheadend -c $DATADIR -u $RUNAS -g $GROUP -f  > /dev/null 2>&1"
+	CMDLINE="sudo -u $RUNAS /usr/bin/tvheadend -c $DATADIR -u $RUNAS -g $GROUP -f 2>&1 >/dev/null"
 	echo "Starting Tvheadend: $CMDLINE"
 	sleep 1
 	$CMDLINE
