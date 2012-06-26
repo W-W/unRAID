@@ -104,7 +104,7 @@ sickbeard_start()
 		sickbeard_install
 	fi
   
-	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/SickBeard.py --daemon --port $PORT --config $CONFIGFILE --datadir $DATADIR --pidfile /var/run/sickbeard.pid > /dev/null 2>&1"
+	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/SickBeard.py --daemon --port $PORT --config $CONFIGFILE --datadir $DATADIR --pidfile /var/run/sickbeard.pid 2>&1 >/dev/null"
 	echo "Starting SickBeard: $CMDLINE"
 	sleep 1
 	$CMDLINE
