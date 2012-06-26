@@ -404,8 +404,13 @@ if (file_exists($sickbeard_configfile))
 		</div>
 		<div style="position:relative;float:left;width:50%;margin-bottom:24px">
 			<form name="sickbeard_restart" method="POST" action="/update.htm" target="progressFrame">
+				<?if ($sickbeard_running=="yes"):?>
 					<input type="hidden" name="cmd" value="/etc/rc.d/rc.sickbeard restart">
 					<input type="submit" name="runCmd" value="Restart">
+				<?else:?>
+					<input type="hidden" name="cmd" value="/etc/rc.d/rc.sickbeard install">
+					<input type="submit" name="runCmd" value="Reinstall">
+				<?endif;?>
 			</form>
 		</div>
 	<?else:?>
@@ -501,9 +506,7 @@ if (file_exists($sickbeard_configfile))
 		<div align="center">
 			<hr size="3" align="center" width="75%" color="grey" style="margin-top:20px;margin-bottom:18px" >
 			<input type="submit" name="runCmd" value="Apply" style="margin-bottom:8px">
-			<? if ($sickbeard_installed=="no"): ?>
-				<input type="button" value="Show advanced configuration" style="margin-bottom:8px" onClick="if (this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display != '') { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = ''; this.innerText = ''; this.value = 'Hide advanced configuration'; } else { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = 'none'; this.innerText = ''; this.value = 'Show advanced configuration'; }">
-			<? endif; ?>
+			<input type="button" value="Show advanced configuration" style="margin-bottom:8px" onClick="if (this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display != '') { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = ''; this.innerText = ''; this.value = 'Hide advanced configuration'; } else { this.parentNode.parentNode.getElementsByTagName('div')[1].getElementsByTagName('div')[0].style.display = 'none'; this.innerText = ''; this.value = 'Show advanced configuration'; }">
 			<button type="button" style="margin-bottom:8px" onClick="done();">Done</button>
 		</div>
 		<div>
