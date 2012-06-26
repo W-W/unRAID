@@ -2,6 +2,26 @@
 <PLUGIN>
 
 <!--
+2011-08-19 0.1-1bw  		- first release
+2011-08-20 0.2-1bw  		- some bug fixes
+2011-08-21 0.3-1bw  		- support for extra config dir, install to ramdisk, drop of sabnzbddependencies package
+2011-08-22 0.4-1bw  		- fixed a bug, when installed to ramdisk
+2011-08-22 0.4a-1bw 		- updated par2 to multicore version
+2011-10-15 0.4b-bw  		- workaround if apikey can't be read correctly
+2011-10-21 0.4c-bw  		- bugfix for updater (version number wasn't read correctly)
+2012-04-11 0.5 				- Beta Branch - Test for allowing sabnzbd beta installation
+2012-04-14 0.5a-influenced  - First release
+2012-05-12 0.6-ww 			- First release with newest dependiences and some sabnzbd beta installation improvements
+2012-05-14 0.6a-ww          - added version informations
+2012-05-04 0.7-influenced   - changed install and data directories to fix bug(if data directory exists at /mnt/cache/.Apps/ all information would be overwritten)
+2012-05-15 0.7.2-ww         - added storage/memory used by install & data dirs + some improvements
+2012-05-15 0.7.3-ww         - added some improvements
+2012-05-24 0.7.4-influenced - Added message indicating whether data directory will survive a reboot or will be lost
+2012-05-25-ww				- added some formatting in web layout
+2012-05-29-ww			    - little fixes
+2012-06-24-ww			    - added improvements + layout change
+2012-06-26-ww			    - changelog restored
+
 This Plugin installs and controls SABnzbd+ for UnRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
 Also this plugin enables easy updates for SABnzbd, since the app doesn't have it's own update routine
@@ -104,7 +124,7 @@ sabnzbd_start()
 		sabnzbd_install
 	fi
   
-	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/SABnzbd.py -d -s 0.0.0.0:$PORT --config-file $DATADIR --pid /var/run/sabnzbd/ > /dev/null 2>&1"
+	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/SABnzbd.py --daemon --server 0.0.0.0:$PORT --config-file $DATADIR --pid /var/run/sabnzbd/"
 	echo "Starting SABnzbd: $CMDLINE"
 	sleep 1
 	$CMDLINE
@@ -228,11 +248,11 @@ sabnzbd_install()
 	echo "Installing latest version of SABnzbd..."
 
 	if [ ! -e "$INSTALLDIR" ]; then 
-		mkdir -p "$INSTALLDIR"
+		mkdir -p $INSTALLDIR
 	fi
 	
 	if [ ! -e "$DATADIR" ]; then 
-		mkdir -p "$DATADIR"
+		mkdir -p $DATADIR
 	fi
 	
 	if [ ! -e "$DATADIR/sabnzbd.ini" ]; then
@@ -604,7 +624,6 @@ checkDATA(document.sabnzbd_settings);
 </INLINE>
 </FILE>
 
-
 <!-- event handler -->
 <FILE Name="/usr/local/emhttp/plugins/sabnzbd/event/unmounting_disks" Mode="0770">
 <INLINE>
@@ -621,11 +640,11 @@ checkDATA(document.sabnzbd_settings);
 # include our config vars
 source /boot/config/plugins/sabnzbd/sabnzbd.cfg
 
-# create sabnzbd-writable directory for pid file
-if [ ! -e /var/run/sabnzbd ]; then
+# create SABnzbd writable directory for pid file
+if [ ! -d /var/run/sabnzbd ]; then
 	mkdir /var/run/sabnzbd
 	chown $RUNAS:users /var/run/sabnzbd
-	chmod 0777 /var/run/sabnzbd
+	chmod 777 /var/run/sabnzbd
 fi
 rm /tmp/sabnzbd-install
 ]]>
