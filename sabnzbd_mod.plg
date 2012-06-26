@@ -434,8 +434,13 @@ else
 		</div>
 		<div style="position:relative;float:left;width:50%;margin-bottom:24px">
 			<form name="sabnzbd_restart" method="POST" action="/update.htm" target="progressFrame">
+				<?if ($sabnzbd_running=="yes"):?>
 					<input type="hidden" name="cmd" value="/etc/rc.d/rc.sabnzbd restart">
 					<input type="submit" name="runCmd" value="Restart">
+				<?else:?>
+					<input type="hidden" name="cmd" value="/etc/rc.d/rc.sabnzbd install">
+					<input type="submit" name="runCmd" value="Reinstall">
+				<?endif;?>
 			</form>
 		</div>
 	<?else:?>
