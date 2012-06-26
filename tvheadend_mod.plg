@@ -425,17 +425,18 @@ if ($tvheadend_installed=="yes")
 				<?else:?>
 					<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend start">
 					<input type="submit" name="runCmd" value="Start">
-					<!--
-					<input type="text" style="display:none;" name="comment1" value="For properly working of XMLTV in Tvheadend it is recommended to start Tvheadend from GO script">
-					<img src="/plugins/simpleFeatures/images/information.png" align="absbottom" style="margin-right:15px;" class="tooltip" title="For properly working of XMLTV in Tvheadend it is recommended to start Tvheadend from GO script" />
-					-->
 				<?endif;?>
 			</form>
 		</div>
 		<div style="position:relative;float:left;width:50%;margin-bottom:24px">
 			<form name="tvheadend_restart" method="POST" action="/update.htm" target="progressFrame">
+				<?if ($tvheadend_running=="yes"):?>
 					<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend restart">
 					<input type="submit" name="runCmd" value="Restart">
+				<?else:?>
+					<input type="hidden" name="cmd" value="/etc/rc.d/rc.tvheadend install">
+					<input type="submit" name="runCmd" value="Reinstall">
+				<?endif;?>
 			</form>
 		</div>
 	<?else:?>
