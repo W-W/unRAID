@@ -2,15 +2,6 @@
 <PLUGIN>
 
 <!--
-2012-05-10 0.1-ww 	     	- first release based on couchpotato-0.5-i468-bw.plg - thanks to Benjamin Waller
-2012-05-11 0.2-ww	     	- some improvements
-2012-05-14 0.2a-ww	     	- added version informations
-2012-05-17 0.3-ww	     	- added lots of improvments + storage/memory used by install & data dirs
-2012-05-17 0.4-influnced	- Added message indicating whether data directory will survive a reboot or will be lost
-2012-05-25-ww			 	- put some fixes + layout modifications
-2012-05-29-ww			 	- little fixes
-2012-06-19-ww			 	- added lots of improvements (especially installing from different sources) + layout change
-
 This Plugin installs and controls CouchPotato v2 for unRaid.
 All dependencies are installed as needed and everything is controlable from the webgui
 -->
@@ -89,7 +80,7 @@ couchpotato_start()
 	fi
   
 	# no-op if already running
-	if [ -r /var/run/couchpotato_v2.pid ]; then
+	if [ -r /var/run/couchpotato_v2/couchpotato_v2.pid ]; then
 		return
 	fi
   
@@ -98,12 +89,12 @@ couchpotato_start()
 		couchpotato_install
 	fi
   
-	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/CouchPotato.py --daemon --config_file $CONFIGFILE --pid_file /var/run/couchpotato_v2.pid"
+	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/CouchPotato.py --daemon --config_file $CONFIGFILE --pid_file /var/run/couchpotato_v2/couchpotato_v2.pid"
 	echo "Starting CouchPotato v2: $CMDLINE"
 	sleep 1
 	$CMDLINE
 
-	while [ ! -e /var/run/couchpotato_v2.pid ]; do
+	while [ ! -e /var/run/couchpotato_v2/couchpotato_v2.pid ]; do
 		sleep 1
 	done
 	echo "... OK"
@@ -113,18 +104,18 @@ couchpotato_start()
 couchpotato_stop()
 {
 	# no-op if not running
-	if [ ! -r /var/run/couchpotato_v2.pid ]; then
+	if [ ! -r /var/run/couchpotato_v2/couchpotato_v2.pid ]; then
 		return
 	fi
 
 	echo "Stopping CouchPotato v2..."
 	sleep 1
-	kill $(cat /var/run/couchpotato_v2.pid)
+	kill $(cat /var/run/couchpotato_v2/couchpotato_v2.pid)
 	sleep 3
 	
-	if [ -e /var/run/couchpotato_v2.pid ]; then
-		kill -9 $(cat /var/run/couchpotato_v2.pid )
-		rm /var/run/couchpotato_v2.pid
+	if [ -e /var/run/couchpotato_v2/couchpotato_v2.pid ]; then
+		kill -9 $(cat /var/run/couchpotato_v2/couchpotato_v2.pid )
+		rm /var/run/couchpotato_v2/couchpotato_v2.pid
 	fi
 	echo "... OK"
 	sleep 1
@@ -360,7 +351,7 @@ $couchpotato_configfile = $couchpotato_cfg["CONFIGFILE"];
 $couchpotato_datadir = trim(shell_exec( "cat \"$couchpotato_configfile\" | grep 'data_dir' | cut -d' ' -f3" ));
 if ($couchpotato_installed=="yes")
 {	
-	$couchpotato_running = file_exists( "/var/run/couchpotato_v2.pid") ? "yes" : "no";
+	$couchpotato_running = file_exists( "/var/run/couchpotato_v2/couchpotato_v2.pid") ? "yes" : "no";
 	if ($couchpotato_cfg[PLG_STORAGESIZE]=="yes")
 		$couchpotato_datasize = shell_exec ( "/etc/rc.d/rc.couchpotato_v2 storagesize $couchpotato_cfg[INSTALLDIR] $couchpotato_datadir" );
 	if ($couchpotato_cfg[PLG_DATACHECK]=="yes")
@@ -672,6 +663,24 @@ checkBRANCH(document.couchpotato_settings);
 <![CDATA[
 #!/bin/bash
 /etc/rc.d/rc.couchpotato_v2 stop
+]]>
+</INLINE>
+</FILE>
+
+<FILE Name="/tmp/couchpotato_v2-install" Run="/bin/bash">
+<INLINE>
+<![CDATA[
+# include our config vars
+source /boot/config/plugins/couchpotato_v2/couchpotato_v2.cfg
+
+# create couchpotato_v2-writable directory for pid file
+if [ ! -e /var/run/couchpotato_v2 ]; then
+  mkdir /var/run/couchpotato_v2
+  chown $RUNAS:users /var/run/couchpotato_v2
+  chmod 0777 /var/run/couchpotato_v2
+fi
+
+rm /tmp/couchpotato_v2-install
 ]]>
 </INLINE>
 </FILE>
