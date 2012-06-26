@@ -124,7 +124,7 @@ sabnzbd_start()
 		sabnzbd_install
 	fi
   
-	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/SABnzbd.py --daemon --server 0.0.0.0:$PORT --config-file $DATADIR --pid /var/run/sabnzbd/"
+	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/SABnzbd.py --daemon --server 0.0.0.0:$PORT --config-file $DATADIR --pid /var/run/sabnzbd/ 2>&1 >/dev/null"
 	echo "Starting SABnzbd: $CMDLINE"
 	sleep 1
 	$CMDLINE
