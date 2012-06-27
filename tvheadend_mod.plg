@@ -673,6 +673,7 @@ function checkRUNNING(form)
 		form.storagesize.disabled = true;
 		form.datacheck.disabled = true;
 		form.xmltv.disabled = true;
+		document.tvheadend_start_stop.runCmd.disabled = false;
 	}
 	else
 	{
@@ -688,6 +689,8 @@ function checkRUNNING(form)
 		form.storagesize.disabled = (form.arg1.value == "enable");
 		form.datacheck.disabled = (form.arg1.value == "enable");
 		form.xmltv.disabled = (form.arg1.value == "enable");
+		if ("<?=$tvheadend_cfg["SERVICE"];?>" == "disable")
+			document.tvheadend_start_stop.runCmd.disabled = true;
 	}
 }
 
