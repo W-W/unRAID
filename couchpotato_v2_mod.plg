@@ -99,7 +99,7 @@ couchpotato_start()
 		couchpotato_install
 	fi
   
-	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/CouchPotato.py --daemon --config_file $CONFIGFILE --pid_file /var/run/couchpotato_v2/couchpotato_v2.pid"
+	CMDLINE="sudo -u $RUNAS python $INSTALLDIR/CouchPotato.py --daemon --config_file $CONFIGFILE --data_dir $DATADIR --pid_file /var/run/couchpotato_v2/couchpotato_v2.pid"
 	echo "Starting CouchPotato v2: $CMDLINE"
 	sleep 1
 	$CMDLINE
@@ -235,7 +235,7 @@ couchpotato_install()
 	git clone -b $BRANCH $INSTALLURL CouchPotatoServer
 	cp -Rf /tmp/CouchPotatoServer/* $INSTALLDIR
 	rm -Rf /tmp/CouchPotatoServer
-		
+	
 	chown -R $RUNAS:users "$INSTALLDIR" "$DATADIR"
 	sleep 3
 	echo "... OK"
