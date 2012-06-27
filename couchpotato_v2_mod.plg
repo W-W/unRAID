@@ -561,6 +561,7 @@ function checkRUNNING(form)
 		form.datacheck.disabled = true;
 		form.url.disabled = true;
 		form.branch.disabled = true;
+		document.couchpotato_start_stop.runCmd.disabled = false;
    } 
    else
    {
@@ -578,6 +579,8 @@ function checkRUNNING(form)
 		form.datacheck.disabled = (form.arg1.value == "enable");
 		form.url.disabled = (form.arg1.value == "enable");
 		form.branch.disabled = (form.arg1.value == "enable");
+		if ("<?=$couchpotato_cfg["SERVICE"];?>" == "disable")
+			document.couchpotato_start_stop.runCmd.disabled = true;
    }
 }
 
