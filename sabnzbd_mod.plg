@@ -555,6 +555,7 @@ function checkRUNNING(form)
 		form.use_data.disabled = true;
 		form.storagesize.disabled = true;
 		form.datacheck.disabled = true;
+		document.sabnzbd_start_stop.runCmd.disabled = false;
 	}
    else
    {
@@ -568,6 +569,8 @@ function checkRUNNING(form)
 		form.use_data.disabled = (form.arg1.value == "enable");
 		form.storagesize.disabled = (form.arg1.value == "enable");
 		form.datacheck.disabled = (form.arg1.value == "enable");
+		if ("<?=$sabnzbd_cfg["SERVICE"];?>" == "disable")
+			document.sabnzbd_start_stop.runCmd.disabled = true;
    }
 }
 
